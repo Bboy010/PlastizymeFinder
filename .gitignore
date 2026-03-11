@@ -1,0 +1,93 @@
+# ============================================================
+# PlastizymeFinder — .gitignore
+# ============================================================
+
+# ----------------------------
+# Nextflow work directory
+# ----------------------------
+work/
+.nextflow/
+.nextflow.log*
+.nextflow.pid
+.nextflow.history
+
+# ----------------------------
+# Pipeline results
+# ----------------------------
+results/
+results_test/
+results_full/
+
+# ----------------------------
+# Databases (large files — provide via --*_db params)
+# ----------------------------
+databases/
+*.tar.gz
+*.tar.bz2
+
+# ----------------------------
+# PDB reference files (auto-downloaded)
+# ----------------------------
+assets/*.pdb
+assets/petase_references/
+
+# ----------------------------
+# Test data (to be added separately)
+# ----------------------------
+assets/testdata/
+
+# ----------------------------
+# Logs and reports
+# ----------------------------
+*.log
+pipeline_info/
+trace-*.txt
+report-*.html
+timeline-*.html
+dag-*.html
+dag-*.dot
+dag-*.svg
+
+# ----------------------------
+# Compressed sequences
+# ----------------------------
+*.fastq.gz
+*.fq.gz
+*.fasta.gz
+*.fa.gz
+*.bam
+*.bai
+*.sam
+
+# ----------------------------
+# Python / conda
+# ----------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.conda/
+envs/
+*.conda
+
+# ----------------------------
+# Editor / OS
+# ----------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----------------------------
+# Secrets / credentials
+# ----------------------------
+.env
+*.key
+*.pem
+secrets/

@@ -20,22 +20,24 @@ workflow BIN_QC {
     ch_versions = Channel.empty()
 
     // 5a. QUAST quality stats on each bin set
-    QUAST_BINS(bins, [], [], false, false)
+    QUAST_BINS(bins, [], [])
     ch_versions = ch_versions.mix(QUAST_BINS.out.versions.first())
 
     // 5b. dRep: dereplicate + filter by completeness/contamination thresholds
     //     Collects all bins across all samples for global dereplication
-    ch_all_bins = bins
+    //     Wrap under a single dummy meta for the process
+    ch_drep_input = bins
         .map { meta, bin_list -> bin_list }
         .flatten()
         .collect()
+        .map { bin_list -> [ [ id: 'all_samples' ], bin_list ] }
 
-    DREP(ch_all_bins)
-    ch_hq_bins  = DREP.out.dereplicated_genomes
+    DREP(ch_drep_input, [])
+    ch_hq_bins  = DREP.out.passed_bins
     ch_versions = ch_versions.mix(DREP.out.versions)
 
     emit:
-    passed_bins = ch_hq_bins  // → BIN_CLASSIFICATION + PLASTIZYME_PREDICTION
+    passed_bins = ch_hq_bins       // → BIN_CLASSIFICATION + PLASTIZYME_PREDICTION
     quast_stats = QUAST_BINS.out.results
     versions    = ch_versions
 }

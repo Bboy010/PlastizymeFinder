@@ -7,33 +7,28 @@
 
 nextflow.enable.dsl = 2
 
-include { METABAT2_METABAT2    } from '../../modules/nf-core/metabat2/metabat2/main'
-include { METABAT2_JGISUMMARIZEBAMCONTIGDEPTHS } from '../../modules/nf-core/metabat2/jgisummarizebamcontigdepths/main'
+include { METABAT2 } from '../../modules/nf-core/metabat2/main'
 
 workflow BINNING {
 
     take:
-    contigs  // channel: [ meta, contigs.fa ]
+    contigs  // channel: [ meta, contigs.fa.gz ]
     bam      // channel: [ meta, sorted.bam ]
 
     main:
     ch_versions = Channel.empty()
 
-    // 4a. Calculate contig depth from BAM
-    METABAT2_JGISUMMARIZEBAMCONTIGDEPTHS(bam)
-    ch_depth    = METABAT2_JGISUMMARIZEBAMCONTIGDEPTHS.out.depth
-    ch_versions = ch_versions.mix(METABAT2_JGISUMMARIZEBAMCONTIGDEPTHS.out.versions.first())
+    // Join contigs with their corresponding BAM by sample ID
+    ch_contigs_bam = contigs.join(bam, by: 0)
 
-    // Join contigs with their depth files
-    ch_contigs_depth = contigs
-        .join(ch_depth, by: 0)
-        .map { meta, contigs, depth -> [ meta, contigs, depth ] }
-
-    // 4b. Bin contigs with MetaBAT2
-    METABAT2_METABAT2(ch_contigs_depth)
-    ch_bins     = METABAT2_METABAT2.out.bins     // [ meta, [ bin1.fa, bin2.fa, ... ] ]
-    ch_unbinned = METABAT2_METABAT2.out.unbinned // [ meta, unbinned.fa ]
-    ch_versions = ch_versions.mix(METABAT2_METABAT2.out.versions.first())
+    // MetaBAT2: jgi_summarize_bam_contig_depths + metabat2 binning (handled in one module)
+    METABAT2(
+        ch_contigs_bam.map { meta, fasta, bam -> [ meta, fasta ] },
+        ch_contigs_bam.map { meta, fasta, bam -> [ meta, bam  ] }
+    )
+    ch_bins     = METABAT2.out.bins     // [ meta, [ bin1.fa, bin2.fa, ... ] ]
+    ch_unbinned = METABAT2.out.unbinned // [ meta, unbinned.fa ]
+    ch_versions = ch_versions.mix(METABAT2.out.versions.first())
 
     emit:
     bins     = ch_bins      // → BIN_QC + PLASTIZYME_PREDICTION

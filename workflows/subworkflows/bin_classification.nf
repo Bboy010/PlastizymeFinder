@@ -8,12 +8,12 @@
 
 nextflow.enable.dsl = 2
 
-include { PROKKA           } from '../../modules/nf-core/prokka/main'
-include { CDHIT_CDHIT      } from '../../modules/nf-core/cdhit/cdhit/main'
-include { GTDBTK_CLASSIFYWF } from '../../modules/nf-core/gtdbtk/classifywf/main'
-include { EGGNOG_MAPPER    } from '../../modules/nf-core/eggnog/emapper/main'
-include { DBCAN2           } from '../../modules/nf-core/dbcan2/main'
-include { KOFAMSCAN        } from '../../modules/nf-core/kofamscan/main'
+include { PROKKA            } from '../../modules/nf-core/prokka/main'
+include { CDHIT             } from '../../modules/nf-core/cdhit/main'
+include { GTDBTK_CLASSIFYWF } from '../../modules/nf-core/gtdbtk/main'
+include { EGGNOG_MAPPER     } from '../../modules/nf-core/eggnog/emapper/main'
+include { DBCAN2            } from '../../modules/nf-core/dbcan2/main'
+include { KOFAMSCAN         } from '../../modules/nf-core/kofamscan/main'
 
 workflow BIN_CLASSIFICATION {
 
@@ -28,26 +28,34 @@ workflow BIN_CLASSIFICATION {
     ch_versions = Channel.empty()
 
     // 6a. Prokka: gene prediction & annotation on each bin
-    PROKKA(hq_bins, [], [])
+    PROKKA(hq_bins, [], [], [], [], [])
     ch_faa      = PROKKA.out.faa    // protein FASTA
     ch_versions = ch_versions.mix(PROKKA.out.versions.first())
 
     // 6b. CD-Hit: cluster proteins (remove redundancy)
-    //     Collect all proteins, cluster globally
+    //     Collect all proteins across bins, cluster globally under a single meta
     ch_all_proteins = ch_faa
         .map { meta, faa -> faa }
-        .collectFile(name: 'all_proteins.faa')
+        .collect()
+        .map { faas ->
+            def merged_meta = [ id: 'all_bins' ]
+            [ merged_meta, faas ]
+        }
+        .flatMap { meta, faas ->
+            // Merge all FAA files into one for CD-HIT
+            [ [ meta, faas.flatten() ] ]
+        }
 
-    CDHIT_CDHIT(ch_all_proteins)
-    ch_clustered = CDHIT_CDHIT.out.fasta
-    ch_versions  = ch_versions.mix(CDHIT_CDHIT.out.versions)
+    CDHIT(ch_all_proteins)
+    ch_clustered = CDHIT.out.fasta
+    ch_versions  = ch_versions.mix(CDHIT.out.versions)
 
     // 6c. GTDB-tk: phylogenomic taxonomy of bins
     GTDBTK_CLASSIFYWF(hq_bins, gtdbtk_db)
     ch_versions = ch_versions.mix(GTDBTK_CLASSIFYWF.out.versions.first())
 
-    // 6d. Functional annotation — run in parallel
-    EGGNOG_MAPPER(ch_clustered, eggnog_db)
+    // 6d. Functional annotation — run in parallel on clustered proteins
+    EGGNOG_MAPPER(ch_clustered, eggnog_db, 'proteins')
     ch_versions = ch_versions.mix(EGGNOG_MAPPER.out.versions)
 
     DBCAN2(ch_clustered, dbcan2_db)
@@ -57,10 +65,10 @@ workflow BIN_CLASSIFICATION {
     ch_versions = ch_versions.mix(KOFAMSCAN.out.versions)
 
     emit:
-    proteins       = ch_clustered                 // → PLASTIZYME_PREDICTION (Stage 7)
+    proteins       = ch_clustered                  // → PLASTIZYME_PREDICTION (Stage 7)
     taxonomy       = GTDBTK_CLASSIFYWF.out.summary
     eggnog_results = EGGNOG_MAPPER.out.annotations
-    dbcan2_results = DBCAN2.out.results
-    kegg_results   = KOFAMSCAN.out.mapper_results
+    dbcan2_results = DBCAN2.out.overview
+    kegg_results   = KOFAMSCAN.out.hits
     versions       = ch_versions
 }

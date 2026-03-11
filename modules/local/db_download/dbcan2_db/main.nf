@@ -30,12 +30,12 @@ process DBCAN2_DB_DOWNLOAD {
     """
     mkdir -p dbcan2_db
     cd dbcan2_db
-    wget -q https://bcb.unl.edu/dbCAN2/download/Databases/V12/CAZyDB.07262023.fa
-    wget -q https://bcb.unl.edu/dbCAN2/download/Databases/V12/dbCAN-HMMdb-V12.txt
-    wget -q https://bcb.unl.edu/dbCAN2/download/Databases/V12/tcdb.fa
-    wget -q https://bcb.unl.edu/dbCAN2/download/Databases/V12/tf-1.hmm
-    wget -q https://bcb.unl.edu/dbCAN2/download/Databases/V12/tf-2.hmm
-    wget -q https://bcb.unl.edu/dbCAN2/download/Databases/V12/stp.hmm
+    wget -q https://pro.unl.edu/dbCAN2/download/Databases/V12/CAZyDB.07262023.fa
+    wget -q https://pro.unl.edu/dbCAN2/download/Databases/V12/dbCAN-HMMdb-V12.txt
+    wget -q https://pro.unl.edu/dbCAN2/download/Databases/V12/tcdb.fa
+    wget -q https://pro.unl.edu/dbCAN2/download/Databases/V12/tf-1.hmm
+    wget -q https://pro.unl.edu/dbCAN2/download/Databases/V12/tf-2.hmm
+    wget -q https://pro.unl.edu/dbCAN2/download/Databases/V12/stp.hmm
     diamond makedb --in CAZyDB.07262023.fa -d CAZyDB
     hmmpress dbCAN-HMMdb-V12.txt
     cd ..

@@ -27,7 +27,7 @@ workflow ASSEMBLY_ANNOTATION {
     ch_versions = ch_versions.mix(MEGAHIT.out.versions.first())
 
     // 3b. Assembly quality evaluation with QUAST
-    QUAST_ASSEMBLY(ch_contigs, [], [], false, false)
+    QUAST_ASSEMBLY(ch_contigs, [], [])
     ch_versions = ch_versions.mix(QUAST_ASSEMBLY.out.versions.first())
 
     // 3c. Gene prediction with Prodigal (metagenomic mode)

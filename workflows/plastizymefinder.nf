@@ -72,6 +72,7 @@ workflow PLASTIZYMEFINDER {
     ch_eggnog_db     = PREPARE_DATABASES.out.eggnog_db
     ch_kofamscan_db  = PREPARE_DATABASES.out.kofamscan_db
     ch_gtdbtk_db     = PREPARE_DATABASES.out.gtdbtk_db
+    ch_petase_ref    = PREPARE_DATABASES.out.petase_ref  // 6EQE or user-provided PDB
     ch_pet_db        = Channel.fromPath(params.pet_db)
 
     ch_versions = ch_versions.mix(PREPARE_DATABASES.out.versions)
@@ -149,13 +150,11 @@ workflow PLASTIZYMEFINDER {
 
     // -----------------------------------------------------------------------
     // Stage 7 — Targeted Plastizyme Prediction
-    // Input: HQ bins + unbinned contigs + PET_DB → MeTarENZ
+    // Input: HQ bins + unbinned contigs (combined per sample) + PET_DB → MeTarENZ
     // -----------------------------------------------------------------------
-    //   Combine HQ bins and unbinned into a single channel of FASTA sequences
-    ch_all_sequences = ch_hq_bins.mix(ch_unbinned)
-
     PLASTIZYME_PREDICTION(
-        ch_all_sequences,
+        ch_hq_bins,
+        ch_unbinned,
         ch_pet_db
     )
 
@@ -167,7 +166,7 @@ workflow PLASTIZYMEFINDER {
     // CD-search → AlphaFold2 → TM-Align (vs known PETase structures)
     // -----------------------------------------------------------------------
     if (!params.skip_structure) {
-        STRUCTURE_PREDICTION(ch_candidates)
+        STRUCTURE_PREDICTION(ch_candidates, ch_petase_ref)
         ch_versions = ch_versions.mix(STRUCTURE_PREDICTION.out.versions)
     }
 

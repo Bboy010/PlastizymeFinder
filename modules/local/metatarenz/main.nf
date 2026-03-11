@@ -18,6 +18,8 @@ process METATARENZ {
 
     input:
     tuple val(meta), path(sequences), path(pet_db)
+    // sequences: one or more FASTA files (HQ bins + unbinned/discarded from MetaBAT2)
+    // pet_db:    curated PET_DB FASTA
 
     output:
     tuple val(meta), path("${meta.id}_candidates.fasta"), emit: candidates
@@ -31,8 +33,11 @@ process METATARENZ {
     def args   = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
+    # Concatenate all input FASTAs (bins + unbinned) into a single query file
+    cat ${sequences} > ${prefix}_combined.fasta
+
     metatarenz \\
-        --query ${sequences} \\
+        --query ${prefix}_combined.fasta \\
         --db ${pet_db} \\
         --out ${prefix}_metatarenz.tsv \\
         --threads ${task.cpus} \\
@@ -40,7 +45,7 @@ process METATARENZ {
 
     # Extract candidate sequences based on MeTarENZ hits
     awk 'NR>1 {print \$1}' ${prefix}_metatarenz.tsv > hit_ids.txt
-    seqtk subseq ${sequences} hit_ids.txt > ${prefix}_candidates.fasta
+    seqtk subseq ${prefix}_combined.fasta hit_ids.txt > ${prefix}_candidates.fasta
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -52,6 +57,7 @@ process METATARENZ {
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
+    touch ${prefix}_combined.fasta
     touch ${prefix}_candidates.fasta
     touch ${prefix}_metatarenz.tsv
     cat <<-END_VERSIONS > versions.yml

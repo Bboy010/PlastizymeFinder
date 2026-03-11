@@ -13,6 +13,7 @@ include { DBCAN2_DB_DOWNLOAD     } from '../../modules/local/db_download/dbcan2_
 include { EGGNOG_DB_DOWNLOAD     } from '../../modules/local/db_download/eggnog_db/main'
 include { KOFAMSCAN_DB_DOWNLOAD  } from '../../modules/local/db_download/kofamscan_db/main'
 include { GTDBTK_DB_DOWNLOAD     } from '../../modules/local/db_download/gtdbtk_db/main'
+include { PETASE_REF_DOWNLOAD    } from '../../modules/local/db_download/petase_ref/main'
 
 workflow PREPARE_DATABASES {
 
@@ -85,6 +86,17 @@ workflow PREPARE_DATABASES {
         ch_versions  = ch_versions.mix(GTDBTK_DB_DOWNLOAD.out.versions)
     }
 
+    // -----------------------------------------------------------------------
+    // PETase reference PDB for TM-Align
+    // -----------------------------------------------------------------------
+    if (params.petase_ref) {
+        ch_petase_ref = Channel.fromPath(params.petase_ref, checkIfExists: true)
+    } else {
+        PETASE_REF_DOWNLOAD()
+        ch_petase_ref = PETASE_REF_DOWNLOAD.out.pdb
+        ch_versions   = ch_versions.mix(PETASE_REF_DOWNLOAD.out.versions)
+    }
+
     emit:
     kraken2_db    = ch_kraken2_db
     metaphlan4_db = ch_metaphlan4_db
@@ -92,5 +104,6 @@ workflow PREPARE_DATABASES {
     eggnog_db     = ch_eggnog_db
     kofamscan_db  = ch_kofamscan_db
     gtdbtk_db     = ch_gtdbtk_db
+    petase_ref    = ch_petase_ref
     versions      = ch_versions
 }
