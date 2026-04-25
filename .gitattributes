@@ -1,0 +1,13 @@
+# Forcer les fins de ligne Unix pour les scripts et fichiers Nextflow
+*.nf text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.groovy text eol=lf
+*.config text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.csv text eol=lf
+*.md text eol=lf
+*.fasta text eol=lf
+nextflow text eol=lf

@@ -1,0 +1,34 @@
+# Dossiers de sortie Nextflow
+work/
+results/
+
+# Répertoire de travail Nextflow
+.nextflow/
+.nextflow.log*
+.nextflow.pid
+.nextflow.history
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Environnements Python/Conda
+.conda/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Logs
+*.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Singularity/Docker caches
+singularity/
+.singularity/

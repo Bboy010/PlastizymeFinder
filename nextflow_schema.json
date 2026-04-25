@@ -1,0 +1,194 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/Bboy010/PlastizymeFinder/master/nextflow_schema.json",
+    "title": "PlastizymeFinder pipeline parameters",
+    "description": "Metagenomic pipeline to identify and characterize plastic-degrading enzymes",
+    "type": "object",
+    "definitions": {
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["input", "outdir", "pet_db"],
+            "properties": {
+                "input": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to comma-separated samplesheet file containing information about samples.",
+                    "help_text": "You will need to create a samplesheet with information about the samples you want to analyse before running the pipeline. Use this parameter to specify its location.",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "outdir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "The output directory where results will be saved.",
+                    "default": "results",
+                    "fa_icon": "fas fa-folder-open"
+                }
+            }
+        },
+        "databases": {
+            "title": "Databases",
+            "type": "object",
+            "fa_icon": "fas fa-database",
+            "description": "Paths to reference databases. Leave null to auto-download at runtime (except pet_db which is required).",
+            "required": ["pet_db"],
+            "properties": {
+                "pet_db": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to PET_DB FASTA file (plastic-degrading enzyme sequences, manually curated).",
+                    "help_text": "Required. Download the default PET_DB from https://github.com/Bboy010/PlastizymeFinder/releases or build your own following docs/pet_db_guide.md",
+                    "fa_icon": "fas fa-dna"
+                },
+                "kraken2_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to Kraken2 database directory. Auto-downloaded if not provided.",
+                    "fa_icon": "fas fa-database"
+                },
+                "metaphlan4_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to MetaPhlAn4 database directory. Auto-downloaded if not provided.",
+                    "fa_icon": "fas fa-database"
+                },
+                "dbcan2_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to dbCAN2 database directory. Auto-downloaded if not provided.",
+                    "fa_icon": "fas fa-database"
+                },
+                "eggnog_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to eggNOG database directory. Auto-downloaded if not provided.",
+                    "fa_icon": "fas fa-database"
+                },
+                "kofamscan_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to KofamScan profiles directory (ko_list + profiles/). Auto-downloaded if not provided.",
+                    "fa_icon": "fas fa-database"
+                },
+                "gtdbtk_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to GTDB-tk reference data directory. Auto-downloaded if not provided.",
+                    "fa_icon": "fas fa-database"
+                },
+                "db_cache_dir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Directory where databases will be downloaded if not provided.",
+                    "default": "${projectDir}/databases",
+                    "fa_icon": "fas fa-folder"
+                }
+            }
+        },
+        "pipeline_options": {
+            "title": "Pipeline options",
+            "type": "object",
+            "fa_icon": "fas fa-cogs",
+            "description": "Options to control pipeline behaviour.",
+            "properties": {
+                "skip_taxonomy": {
+                    "type": "boolean",
+                    "description": "Skip taxonomic profiling (Stage 2: Kraken2 + MetaPhlAn4).",
+                    "default": false,
+                    "fa_icon": "fas fa-forward"
+                },
+                "skip_annotation": {
+                    "type": "boolean",
+                    "description": "Skip gene annotation (Stage 6: eggNOG, dbCAN2, kofamscan).",
+                    "default": false,
+                    "fa_icon": "fas fa-forward"
+                },
+                "skip_structure": {
+                    "type": "boolean",
+                    "description": "Skip 3D structure prediction (Stage 8: AlphaFold2 + TM-Align).",
+                    "default": false,
+                    "fa_icon": "fas fa-forward"
+                },
+                "host_genome": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to host genome FASTA for decontamination (Bowtie2 in Stage 1).",
+                    "fa_icon": "fas fa-dna"
+                },
+                "min_contig_len": {
+                    "type": "integer",
+                    "description": "Minimum contig length (bp) to keep after assembly.",
+                    "default": 1000,
+                    "fa_icon": "fas fa-ruler"
+                },
+                "min_bin_size": {
+                    "type": "integer",
+                    "description": "Minimum bin size (bp) for MetaBAT2.",
+                    "default": 200000,
+                    "fa_icon": "fas fa-ruler"
+                },
+                "min_completeness": {
+                    "type": "number",
+                    "description": "Minimum bin completeness (%) for dRep filtering.",
+                    "default": 50,
+                    "fa_icon": "fas fa-percentage"
+                },
+                "max_contamination": {
+                    "type": "number",
+                    "description": "Maximum bin contamination (%) for dRep filtering.",
+                    "default": 10,
+                    "fa_icon": "fas fa-percentage"
+                }
+            }
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "fas fa-file-import",
+            "description": "Less common options for the pipeline.",
+            "properties": {
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text.",
+                    "fa_icon": "fas fa-question-circle"
+                },
+                "version": {
+                    "type": "boolean",
+                    "description": "Display version and exit.",
+                    "fa_icon": "fas fa-question-circle"
+                },
+                "publish_dir_mode": {
+                    "type": "string",
+                    "default": "copy",
+                    "description": "Method used to save pipeline results to output directory.",
+                    "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"],
+                    "fa_icon": "fas fa-copy"
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Email address for completion summary.",
+                    "fa_icon": "fas fa-envelope"
+                },
+                "monochrome_logs": {
+                    "type": "boolean",
+                    "description": "Do not use coloured log outputs.",
+                    "fa_icon": "fas fa-palette"
+                },
+                "multiqc_config": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Custom config file to supply to MultiQC.",
+                    "fa_icon": "fas fa-cog"
+                }
+            }
+        }
+    },
+    "allOf": [
+        { "$ref": "#/definitions/input_output_options" },
+        { "$ref": "#/definitions/databases" },
+        { "$ref": "#/definitions/pipeline_options" },
+        { "$ref": "#/definitions/generic_options" }
+    ]
+}
