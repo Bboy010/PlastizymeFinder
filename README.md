@@ -33,6 +33,7 @@ The pipeline was developed as part of the **March 2026 nf-core Hackathon**.
 ---
 
 ## Pipeline overview
+<img width="1188" height="1138" alt="diagramme d&#39;etude metagenomique" src="https://github.com/user-attachments/assets/43ad3675-e42e-4f40-af94-893884fa31bb" />
 
 ```
 Raw FASTQ reads
