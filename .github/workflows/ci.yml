@@ -77,7 +77,14 @@ jobs:
         with:
           version: "0.9.4"
 
-      # METARENZ pulls mforooz/metarenz; TMALIGN pulls its Biocontainers image.
-      # Both run against the test data shipped in the repository.
+      # The MeTarEnz runtime image is the upstream one plus procps. It is not on
+      # a registry, so build it here from the committed recipe: that keeps the
+      # tests self-contained and checks the Dockerfile still builds. Docker finds
+      # the tag locally and never tries to pull it.
+      - name: Build the MeTarEnz runtime image
+        run: docker build -t plastizymefinder/metarenz:1.0 containers/metarenz
+
+      # TMALIGN and RPSBLAST pull public Biocontainers images. Everything runs
+      # against the test data shipped in the repository.
       - name: nf-test
         run: nf-test test modules/local --profile docker
