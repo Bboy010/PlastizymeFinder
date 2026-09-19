@@ -32,3 +32,13 @@ Thumbs.db
 # Singularity/Docker caches
 singularity/
 .singularity/
+
+# nf-test
+.nf-test/
+.nf-test.log
+
+# Auto-downloaded database cache (params.db_cache_dir)
+databases/
+
+# Checklist de finalisation (fichier de travail local)
+checklist.md

@@ -24,7 +24,7 @@ process QUAST {
     script:
     def args   = task.ext.args   ?: ''
     prefix     = task.ext.prefix ?: "${meta.id}"
-    def input  = consensus.collect { it }.join(' ')
+    def input  = consensus.collect { f -> f }.join(' ')
     def ref    = fasta ? "--reference ${fasta}" : ''
     def annot  = gff   ? "--features ${gff}"   : ''
     """
@@ -42,6 +42,18 @@ process QUAST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         quast: \$( quast.py --version 2>&1 | sed 's/QUAST v//' )
+    END_VERSIONS
+    """
+    stub:
+    prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    touch ${prefix}
+    touch ${prefix}.tsv
+    touch ${prefix}.html
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        quast: "stub"
     END_VERSIONS
     """
 }

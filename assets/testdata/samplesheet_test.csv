@@ -1,0 +1,2 @@
+sample,fastq_1,fastq_2
+TEST001,assets/testdata/test_sample_R1.fastq.gz,assets/testdata/test_sample_R2.fastq.gz

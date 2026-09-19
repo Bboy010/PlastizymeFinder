@@ -52,5 +52,6 @@ workflow QC_PREPROCESSING {
     emit:
     reads    = ch_clean    // [ meta, [clean_reads] ] → Assembly
     reports  = ch_reports  // All QC files → MultiQC
+    fastp_json = FASTP.out.json  // [ meta, *.json ] → reporting
     versions = ch_versions
 }

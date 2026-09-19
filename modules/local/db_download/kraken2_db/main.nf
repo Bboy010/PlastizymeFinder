@@ -39,4 +39,13 @@ process KRAKEN2_DB_DOWNLOAD {
         kraken2: \$(kraken2 --version 2>&1 | head -n1 | sed 's/Kraken version //')
     END_VERSIONS
     """
+    stub:
+    """
+    mkdir -p kraken2_db
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        kraken2_db_download: "stub"
+    END_VERSIONS
+    """
 }

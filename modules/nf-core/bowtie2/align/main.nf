@@ -52,4 +52,17 @@ process BOWTIE2_ALIGN {
         samtools: \$( samtools --version | head -1 | sed 's/samtools //' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    touch ${prefix}.bam
+    touch ${prefix}.bam.bai
+    touch ${prefix}.log
+    printf "" | gzip > ${prefix}.fastq.gz
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        bowtie2_align: "stub"
+    END_VERSIONS
+    """
 }

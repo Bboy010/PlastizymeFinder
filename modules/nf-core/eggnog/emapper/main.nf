@@ -39,4 +39,16 @@ process EGGNOG_MAPPER {
         eggnog-mapper: \$( emapper.py --version 2>&1 | grep 'emapper' | sed 's/emapper-//' | sed 's/ .*//' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    touch ${prefix}.emapper.annotations
+    touch ${prefix}.emapper.hits
+    touch ${prefix}.emapper.seed_orthologs
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        eggnog_mapper: "stub"
+    END_VERSIONS
+    """
 }

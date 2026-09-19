@@ -7,11 +7,22 @@
 
 ---
 
+> **Erratum — September 2026.** The original version of this post described
+> MeTarEnz as a tool developed by the pipeline authors. That is incorrect:
+> **MeTarEnz** is a published third-party tool by Foroozandeh Shahraki *et al.*,
+> *Natural Products and Bioprospecting* (2024),
+> [doi:10.1007/s13659-023-00426-8](https://doi.org/10.1007/s13659-023-00426-8),
+> available at <https://github.com/mehdiforoozandeh/MeTarEnz>. Blocker #1 below is
+> also resolved: the authors publish a Docker image (`mforooz/metarenz`), so no
+> Bioconda submission is required to run Stage 7.
+
+---
+
 ## Overview
 
 Hi Nextflow community! I am building **PlastizymeFinder**, a DSL2 metagenomics pipeline for the **discovery and structural validation of plastic-degrading enzymes (plastizymes)** from environmental samples.
 
-The pipeline takes raw paired-end sequencing reads, performs metagenomics analysis from QC to genome binning, then uses a custom tool (**MeTarENZ**) to identify candidate plastizymes against a curated reference database (PET_DB). Candidates are then validated by 3D structure prediction (AlphaFold2) and structural comparison to known PETase references (TM-Align).
+The pipeline takes raw paired-end sequencing reads, performs metagenomics analysis from QC to genome binning, then uses **MeTarEnz** (Foroozandeh Shahraki et al., 2024) to identify candidate plastizymes against a curated reference database (PET_DB). Candidates are then validated by 3D structure prediction (AlphaFold2) and structural comparison to known PETase references (TM-Align).
 
 I am about **85% complete** but have hit several roadblocks I would love community help with. The full code is available at: https://github.com/Bboy010/PlastizymeFinder
 
@@ -47,7 +58,7 @@ Raw reads (paired-end FASTQ)
     │
     ▼
 [Stage 7] Plastizyme Prediction 🔴 BLOCKED
-    MeTarENZ vs PET_DB → candidate FASTA
+    MeTarEnz vs PET_DB → candidate FASTA
     │
     ▼
 [Stage 8] 3D Structure Validation ✅ (skippable)
@@ -82,9 +93,9 @@ MultiQC report ⚠️ INCOMPLETE
 
 ## Blockers — Where I Need Help
 
-### 🔴 BLOCKER #1 — MeTarENZ container not available on Biocontainers
+### 🔴 BLOCKER #1 — MeTarEnz container not available on Biocontainers
 
-**This is the main issue.** The core step of the pipeline (Stage 7) uses a custom tool called **MeTarENZ** that I developed. I have referenced it in the module as:
+**This is the main issue.** The core step of the pipeline (Stage 7) uses **MeTarEnz** (Foroozandeh Shahraki et al., *Nat. Prod. Bioprospect.* 2024, doi:10.1007/s13659-023-00426-8), a published third-party tool. I have referenced it in the module as:
 
 ```groovy
 // modules/local/metatarenz/main.nf
@@ -187,7 +198,7 @@ PlastizymeFinder/
 │       ├── binning.nf
 │       ├── bin_qc.nf
 │       ├── bin_classification.nf
-│       ├── plastizyme_prediction.nf     # 🔴 Blocked on MeTarENZ container
+│       ├── plastizyme_prediction.nf     # 🔴 Blocked on MeTarEnz container
 │       └── structure_prediction.nf
 ├── modules/
 │   ├── local/
@@ -223,7 +234,7 @@ PlastizymeFinder/
 | eggNOG-mapper | Any | Functional annotation |
 | dbCAN2 | Any | CAZyme annotation |
 | KofamScan | Any | KEGG KO assignment |
-| **MeTarENZ** | custom | **Plastizyme prediction** |
+| **MeTarEnz** | 1.0 | **Plastizyme prediction** |
 | AlphaFold2 | 2.x | 3D structure prediction |
 | TM-Align | Any | Structural comparison |
 | MultiQC | Any | Report aggregation |
@@ -232,7 +243,7 @@ PlastizymeFinder/
 
 ## What I Am Looking For
 
-1. **Guidance on MeTarENZ containerization** — how to get a custom tool ready for Biocontainers / Bioconda quickly for pipeline testing
+1. **Guidance on MeTarEnz containerization** — how to get a custom tool ready for Biocontainers / Bioconda quickly for pipeline testing
 2. **MultiQC channel mixing pattern** — DSL2 best practice for aggregating QC files from many subworkflows
 3. **Portable test data** — recommended approach for hosting small metagenomics test FASTQ files
 4. **GPU profile pattern** — optional GPU allocation in `base.config`

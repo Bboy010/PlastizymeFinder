@@ -45,4 +45,13 @@ process DBCAN2_DB_DOWNLOAD {
         dbcan: \$(run_dbcan --version 2>&1 | head -n1)
     END_VERSIONS
     """
+    stub:
+    """
+    mkdir -p dbcan2_db
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        dbcan2_db_download: "stub"
+    END_VERSIONS
+    """
 }

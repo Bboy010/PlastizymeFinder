@@ -7,7 +7,9 @@ process MULTIQC {
         'biocontainers/multiqc:1.21--pyhdfd78af_0' }"
 
     input:
-    path  multiqc_files, stageAs: 'multiqc_input/*'
+    // '?/*' gives each file its own numbered directory, so two reports
+    // that share a name (FastQC raw vs trimmed) cannot collide.
+    path  multiqc_files, stageAs: '?/*'
     path  multiqc_config
     path  extra_multiqc_config
     path  multiqc_logo
@@ -35,11 +37,21 @@ process MULTIQC {
         $logo_arg \\
         $title_arg \\
         $args \\
-        multiqc_input/
+        ./
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         multiqc: \$( multiqc --version | sed 's/multiqc, version //' )
+    END_VERSIONS
+    """
+    stub:
+    """
+    touch multiqc_report.html
+    mkdir -p multiqc_data multiqc_plots
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        multiqc: "stub"
     END_VERSIONS
     """
 }

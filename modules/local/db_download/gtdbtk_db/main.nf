@@ -39,4 +39,13 @@ process GTDBTK_DB_DOWNLOAD {
         gtdbtk: \$(gtdbtk --version 2>&1 | head -n1 | sed 's/gtdbtk: //')
     END_VERSIONS
     """
+    stub:
+    """
+    mkdir -p gtdbtk_db
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        gtdbtk_db_download: "stub"
+    END_VERSIONS
+    """
 }

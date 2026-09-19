@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Une seule exécution par branche : annule la précédente si on repousse.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NXF_ANSI_LOG: false
+
+jobs:
+  lint:
+    name: Syntaxe stricte
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "26.04.6"
+
+      - name: nextflow lint
+        run: nextflow lint .
+
+  stub:
+    name: Pipeline de bout en bout (stub)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "26.04.6"
+
+      # Le stub n'exécute aucun outil : pas de conteneur à tirer, pas de base de
+      # données à télécharger. C'est ce qui rend ce job utilisable en CI.
+      - name: Les 9 étapes s'enchaînent
+        run: |
+          nextflow run . -profile test_all -stub-run \
+            --outdir results --work-dir work
+
+      - name: Vérifier que chaque étape a tourné
+        run: |
+          TRACE=results/pipeline_info/execution_trace.txt
+          test -s "${TRACE}" || { echo "trace absente"; exit 1; }
+          for stage in QC_PREPROCESSING TAXONOMIC_PROFILING ASSEMBLY_ANNOTATION \
+                       BINNING BIN_QC BIN_CLASSIFICATION PLASTIZYME_PREDICTION \
+                       STRUCTURE_PREDICTION MULTIQC; do
+            grep -q "${stage}" "${TRACE}" || { echo "étape ${stage} absente"; exit 1; }
+          done
+          echo "$(grep -c COMPLETED "${TRACE}") processus terminés"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapports-execution
+          path: results/pipeline_info/
+          retention-days: 7
+
+  modules:
+    name: Tests unitaires des modules locaux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "26.04.6"
+
+      - uses: nf-core/setup-nf-test@v1
+        with:
+          version: "0.9.4"
+
+      # METARENZ tire mforooz/metarenz ; TMALIGN tire son conteneur
+      # Biocontainers. Les deux tournent sur des données de test embarquées.
+      - name: nf-test
+        run: nf-test test modules/local --profile docker

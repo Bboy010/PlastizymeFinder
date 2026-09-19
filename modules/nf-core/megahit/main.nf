@@ -40,4 +40,15 @@ process MEGAHIT {
         megahit: \$( megahit --version | sed 's/MEGAHIT v//' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    printf "" | gzip > ${prefix}.contigs.fa.gz
+    touch ${prefix}.log
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        megahit: "stub"
+    END_VERSIONS
+    """
 }

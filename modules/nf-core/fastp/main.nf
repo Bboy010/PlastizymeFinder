@@ -53,4 +53,19 @@ process FASTP {
         fastp: \$( fastp --version 2>&1 | sed -e 's/fastp //g' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    printf "" | gzip > ${prefix}.fastp.fastq.gz
+    touch ${prefix}.json
+    touch ${prefix}.html
+    touch ${prefix}.log
+    printf "" | gzip > ${prefix}.fail.fastq.gz
+    printf "" | gzip > ${prefix}.merged.fastq.gz
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        fastp: "stub"
+    END_VERSIONS
+    """
 }

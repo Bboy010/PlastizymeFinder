@@ -42,4 +42,17 @@ process PRODIGAL {
         prodigal: \$( prodigal -v 2>&1 | sed -n 's/Prodigal V\\([0-9.]\\+\\).*/\\1/p' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    touch ${prefix}.gff
+    touch ${prefix}.faa
+    touch ${prefix}.fna
+    touch ${prefix}.txt
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        prodigal: "stub"
+    END_VERSIONS
+    """
 }

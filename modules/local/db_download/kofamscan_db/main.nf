@@ -40,4 +40,13 @@ process KOFAMSCAN_DB_DOWNLOAD {
         kofamscan: \$(exec_annotation --version 2>&1 | sed 's/KofamScan //')
     END_VERSIONS
     """
+    stub:
+    """
+    mkdir -p kofamscan_db
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        kofamscan_db_download: "stub"
+    END_VERSIONS
+    """
 }

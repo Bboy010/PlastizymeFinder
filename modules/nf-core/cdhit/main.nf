@@ -36,4 +36,15 @@ process CDHIT {
         cdhit: \$( cd-hit -h 2>&1 | head -1 | sed 's/.*CD-HIT version //' | sed 's/ (.*//' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    printf "" | gzip > ${prefix}.fa.gz
+    touch ${prefix}.clstr
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        cdhit: "stub"
+    END_VERSIONS
+    """
 }

@@ -22,7 +22,8 @@ include { STRUCTURE_PREDICTION   } from '../workflows/subworkflows/structure_pre
 // -----------------------------------------------------------------------
 // IMPORT MODULES
 // -----------------------------------------------------------------------
-include { MULTIQC } from '../modules/nf-core/multiqc/main'
+include { MULTIQC     } from '../modules/nf-core/multiqc/main'
+include { PLOT_REPORT } from '../modules/local/plotreport/main'
 
 // -----------------------------------------------------------------------
 // HELPER FUNCTIONS
@@ -73,6 +74,7 @@ workflow PLASTIZYMEFINDER {
     def ch_kofamscan_db  = PREPARE_DATABASES.out.kofamscan_db
     def ch_gtdbtk_db     = PREPARE_DATABASES.out.gtdbtk_db
     def ch_petase_ref    = PREPARE_DATABASES.out.petase_ref  // 6EQE or user-provided PDB
+    def ch_cdd_db        = PREPARE_DATABASES.out.cdd_db      // CDD profiles for RPS-BLAST
     def ch_pet_db        = channel.fromPath(params.pet_db)
 
     ch_versions = ch_versions.mix(PREPARE_DATABASES.out.versions)
@@ -91,13 +93,17 @@ workflow PLASTIZYMEFINDER {
     // Stage 2 — Taxonomic Profiling (runs in parallel with assembly)
     // Kraken2/Krona + MetaPhlAn4
     // -----------------------------------------------------------------------
+    def ch_kraken2_report    = channel.empty()
+    def ch_metaphlan_profile = channel.empty()
     if (!params.skip_taxonomy) {
         TAXONOMIC_PROFILING(
             ch_clean_reads,
             ch_kraken2_db,
             ch_metaphlan4_db
         )
-        ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
+        ch_kraken2_report    = TAXONOMIC_PROFILING.out.kraken2_report
+        ch_metaphlan_profile = TAXONOMIC_PROFILING.out.metaphlan4_profile
+        ch_versions          = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
     }
 
     // -----------------------------------------------------------------------
@@ -158,7 +164,8 @@ workflow PLASTIZYMEFINDER {
         PLASTIZYME_PREDICTION(
             ch_hq_bins,
             ch_unbinned,
-            ch_pet_db
+            ch_pet_db,
+            params.metarenz_mode
         )
         ch_candidates = PLASTIZYME_PREDICTION.out.candidates
         ch_versions   = ch_versions.mix(PLASTIZYME_PREDICTION.out.versions)
@@ -169,17 +176,52 @@ workflow PLASTIZYMEFINDER {
     // CD-search → AlphaFold2 → TM-Align (vs known PETase structures)
     // -----------------------------------------------------------------------
     if (!params.skip_structure && !params.skip_plastizyme) {
-        STRUCTURE_PREDICTION(ch_candidates, ch_petase_ref)
+        STRUCTURE_PREDICTION(ch_candidates, ch_petase_ref, ch_cdd_db)
         ch_versions = ch_versions.mix(STRUCTURE_PREDICTION.out.versions)
     }
 
     // -----------------------------------------------------------------------
-    // MultiQC — aggregate QC reports from all stages
+    // Software versions — every module emits a versions.yml; collate them into
+    // a single file so the run is reproducible and MultiQC can report it.
     // -----------------------------------------------------------------------
+    def ch_collated_versions = ch_versions
+        .unique()
+        .collectFile(name: 'software_versions.yml', sort: true)
+
+    // -----------------------------------------------------------------------
+    // MultiQC — aggregate the reports of every stage, not just the QC one.
+    // Each subworkflow contributes what MultiQC knows how to parse.
+    // -----------------------------------------------------------------------
+    def ch_multiqc_files = channel.empty()
+        .mix(ch_qc_reports.map { _meta, files -> files })
+        .mix(ch_kraken2_report.map { _meta, f -> f })
+        .mix(ch_metaphlan_profile.map { _meta, f -> f })
+        .mix(ASSEMBLY_ANNOTATION.out.quast.map { _meta, f -> f })
+        .mix(BIN_QC.out.quast_stats.map { _meta, f -> f })
+        .mix(ch_collated_versions)
+
+    def ch_multiqc_config = params.multiqc_config
+        ? channel.fromPath(params.multiqc_config, checkIfExists: true)
+        : channel.fromPath("${projectDir}/assets/multiqc_config.yml", checkIfExists: true)
+
     MULTIQC(
-        ch_qc_reports.map { meta, files -> files }.collect(),
-        [],
+        ch_multiqc_files.collect(),
+        ch_multiqc_config.collect().ifEmpty([]),
         [],
         []
     )
+
+    // -----------------------------------------------------------------------
+    // Figures — taxonomy, assembly, bins and read QC, rendered from the raw
+    // reports each tool wrote. Every input is optional: a skipped stage simply
+    // drops the figures that depend on it.
+    // -----------------------------------------------------------------------
+    PLOT_REPORT(
+        ch_kraken2_report.ifEmpty { [[id: 'all_samples'], []] },
+        ch_metaphlan_profile.map { _meta, f -> f }.ifEmpty([]),
+        ASSEMBLY_ANNOTATION.out.quast.map { _meta, f -> f }.ifEmpty([]),
+        BIN_QC.out.drep_tables.map { _meta, f -> f }.ifEmpty([]),
+        QC_PREPROCESSING.out.fastp_json.map { _meta, f -> f }.ifEmpty([])
+    )
+    ch_versions = ch_versions.mix(PLOT_REPORT.out.versions)
 }

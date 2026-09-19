@@ -57,4 +57,17 @@ process KRAKEN2 {
         kraken2: \$( kraken2 --version | head -1 | sed 's/Kraken version //' | sed 's/, Copyright.*//' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    printf "" | gzip > ${prefix}.classified.fastq.gz
+    printf "" | gzip > ${prefix}.unclassified.fastq.gz
+    touch ${prefix}.classifiedreads.txt
+    touch ${prefix}.kraken2.report.txt
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        kraken2: "stub"
+    END_VERSIONS
+    """
 }
