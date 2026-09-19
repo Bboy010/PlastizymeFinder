@@ -43,7 +43,7 @@ jobs:
       - name: Les 9 étapes s'enchaînent
         run: |
           nextflow run . -profile test_all -stub-run \
-            --outdir results --work-dir work
+            --outdir results -w work
 
       - name: Vérifier que chaque étape a tourné
         run: |
