@@ -5,7 +5,7 @@ Build the PlastizymeFinder figure set from a results directory.
 Reads the raw outputs each tool already writes (Kraken2 report, MetaPhlAn
 profile, QUAST report, dRep tables, fastp JSON) and renders one figure per
 question. Every figure is written as PNG; a Krona text file is emitted
-alongside so KRONA_KTIMPORTTEXT can turn it into the interactive sunburst.
+alongside so an ImportText step can turn it into the interactive sunburst.
 
 Usage: plot_results.py <results_dir> <figures_dir>
 """
@@ -45,8 +45,8 @@ plt.rcParams.update({
     "figure.dpi": 160,
 })
 
-RANKS = {"D": "domaine", "P": "phylum", "C": "classe", "O": "ordre",
-         "F": "famille", "G": "genre", "S": "espèce"}
+RANKS = {"D": "domain", "P": "phylum", "C": "class", "O": "order",
+         "F": "family", "G": "genus", "S": "species"}
 
 
 def finish(ax, title, subtitle=None):
@@ -120,25 +120,24 @@ def fig_taxa_bar(kraken, outdir):
 
     fig, ax = plt.subplots(figsize=(8.2, 5.6))
     y = np.arange(len(top))
-    ax.barh(y, [r["pct"] for r in top], height=0.62,
-            color=SERIES_1, zorder=3)
+    ax.barh(y, [r["pct"] for r in top], height=0.62, color=SERIES_1, zorder=3)
     ax.set_yticks(y)
     ax.set_yticklabels([r["name"] for r in top], fontsize=9)
-    ax.set_xlabel("part des lectures classées (%)")
+    ax.set_xlabel("share of classified reads (%)")
     ax.xaxis.grid(True, color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
 
+    widest = max(r["pct"] for r in top)
     for yi, r in zip(y, top):
-        ax.text(r["pct"] + max(r["pct"] for r in top) * 0.015, yi,
-                "{:.2f}".format(r["pct"]), va="center", fontsize=8.5,
-                color=INK_SOFT)
+        ax.text(r["pct"] + widest * 0.015, yi, "{:.2f}".format(r["pct"]),
+                va="center", fontsize=8.5, color=INK_SOFT)
 
     unclassified = next((r["pct"] for r in kraken if r["name"] == "unclassified"), None)
-    sub = "Kraken2 — 15 espèces les plus abondantes"
+    sub = "Kraken2 - 15 most abundant species"
     if unclassified is not None:
-        sub += "  ·  {:.1f} % des lectures non classées".format(unclassified)
-    finish(ax, "Composition taxonomique", sub)
-    return save(fig, outdir, "01_taxonomie_kraken2.png")
+        sub += "  ·  {:.1f}% of reads unclassified".format(unclassified)
+    finish(ax, "Taxonomic composition", sub)
+    return save(fig, outdir, "01_taxonomy_kraken2.png")
 
 
 def fig_rank_profile(kraken, outdir):
@@ -157,15 +156,15 @@ def fig_rank_profile(kraken, outdir):
     ax.bar(x, vals, width=0.6, color=SERIES_1, zorder=3)
     ax.set_xticks(x)
     ax.set_xticklabels([RANKS[c] for c in order], fontsize=9.5)
-    ax.set_ylabel("taxons distincts")
+    ax.set_ylabel("distinct taxa")
     ax.yaxis.grid(True, color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
     for xi, v in zip(x, vals):
         ax.text(xi, v + max(vals) * 0.02, str(v), ha="center",
                 fontsize=9, color=INK_SOFT)
-    finish(ax, "Résolution taxonomique par rang",
-           "Kraken2 — nombre de taxons détectés à chaque niveau")
-    return save(fig, outdir, "02_rangs_taxonomiques.png")
+    finish(ax, "Taxonomic resolution by rank",
+           "Kraken2 - taxa detected at each level")
+    return save(fig, outdir, "02_taxonomic_ranks.png")
 
 
 def fig_metaphlan(profile, outdir):
@@ -182,16 +181,16 @@ def fig_metaphlan(profile, outdir):
     ax.barh(y, [v for _, v in top], height=0.62, color=SERIES_2, zorder=3)
     ax.set_yticks(y)
     ax.set_yticklabels([n for n, _ in top], fontsize=9)
-    ax.set_xlabel("abondance relative (%)")
+    ax.set_xlabel("relative abundance (%)")
     ax.xaxis.grid(True, color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
-    top_v = max(v for _, v in top)
+    widest = max(v for _, v in top)
     for yi, (_, v) in zip(y, top):
-        ax.text(v + top_v * 0.015, yi, "{:.2f}".format(v), va="center",
+        ax.text(v + widest * 0.015, yi, "{:.2f}".format(v), va="center",
                 fontsize=8.5, color=INK_SOFT)
-    finish(ax, "Profil d'abondance MetaPhlAn4",
-           "12 espèces dominantes — abondance relative estimée par marqueurs")
-    return save(fig, outdir, "03_metaphlan_especes.png")
+    finish(ax, "MetaPhlAn4 abundance profile",
+           "12 dominant species - marker-based relative abundance")
+    return save(fig, outdir, "03_metaphlan_species.png")
 
 
 def fig_mash_heatmap(mdb_path, outdir):
@@ -227,13 +226,13 @@ def fig_mash_heatmap(mdb_path, outdir):
     ax.set_yticklabels(short, fontsize=6.5)
     ax.set_xlabel("bin")
     cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
-    cb.set_label("similarité MASH", color=INK_SOFT)
+    cb.set_label("MASH similarity", color=INK_SOFT)
     cb.outline.set_visible(False)
     off = m[~np.eye(n, dtype=bool)]
-    finish(ax, "Similarité entre bins",
-           "dRep / MASH — {} bins, similarité hors-diagonale maximale {:.2f}"
+    finish(ax, "Similarity between bins",
+           "dRep / MASH - {} bins, highest off-diagonal similarity {:.2f}"
            .format(n, off.max() if off.size else 0.0))
-    return save(fig, outdir, "04_similarite_bins.png")
+    return save(fig, outdir, "04_bin_similarity.png")
 
 
 def fig_bin_scatter(geninfo_path, outdir):
@@ -250,20 +249,19 @@ def fig_bin_scatter(geninfo_path, outdir):
     fig, ax = plt.subplots(figsize=(7.6, 5.0))
     ax.scatter(np.array(lengths) / 1e6, n50s, s=64, color=SERIES_1,
                edgecolor=SURFACE, linewidth=1.6, zorder=3)
-    ax.set_xlabel("taille du bin (Mb)")
-    ax.set_ylabel("N50 du bin (pb)")
+    ax.set_xlabel("bin size (Mb)")
+    ax.set_ylabel("bin N50 (bp)")
     ax.grid(True, color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
 
     # label only the extremes - never a label on every point
-    order = np.argsort(lengths)[::-1][:3]
-    for i in order:
+    for i in np.argsort(lengths)[::-1][:3]:
         ax.annotate(names[i].split(".", 1)[-1], (lengths[i] / 1e6, n50s[i]),
                     textcoords="offset points", xytext=(8, 4),
                     fontsize=8.5, color=INK_SOFT)
-    finish(ax, "Qualité des bins métagénomiques",
-           "{} bins MetaBAT2 — taille contre contiguïté".format(len(lengths)))
-    return save(fig, outdir, "05_qualite_bins.png")
+    finish(ax, "Metagenome bin quality",
+           "{} MetaBAT2 bins - size against contiguity".format(len(lengths)))
+    return save(fig, outdir, "05_bin_quality.png")
 
 
 def fig_assembly(report_path, outdir):
@@ -278,28 +276,32 @@ def fig_assembly(report_path, outdir):
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.6, 3.9))
     x = np.arange(len(thresholds))
-    labels = ["≥{}".format("0" if t == 0 else
-                           ("{}k".format(t // 1000))) for t in thresholds]
+    labels = ["≥{}".format("0" if t == 0 else "{}k".format(t // 1000))
+              for t in thresholds]
 
     ax1.bar(x, counts, width=0.6, color=SERIES_1, zorder=3)
-    ax1.set_xticks(x); ax1.set_xticklabels(labels, fontsize=9)
-    ax1.set_ylabel("contigs"); ax1.set_xlabel("longueur minimale (pb)")
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(labels, fontsize=9)
+    ax1.set_ylabel("contigs")
+    ax1.set_xlabel("minimum length (bp)")
     ax1.yaxis.grid(True, color=GRID, linewidth=0.8, zorder=0)
     ax1.set_axisbelow(True)
     finish(ax1, "Contigs", None)
 
     ax2.bar(x, lengths, width=0.6, color=SERIES_2, zorder=3)
-    ax2.set_xticks(x); ax2.set_xticklabels(labels, fontsize=9)
-    ax2.set_ylabel("assemblage cumulé (Mb)"); ax2.set_xlabel("longueur minimale (pb)")
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(labels, fontsize=9)
+    ax2.set_ylabel("cumulative assembly (Mb)")
+    ax2.set_xlabel("minimum length (bp)")
     ax2.yaxis.grid(True, color=GRID, linewidth=0.8, zorder=0)
     ax2.set_axisbelow(True)
-    finish(ax2, "Longueur cumulée", None)
+    finish(ax2, "Cumulative length", None)
 
-    fig.suptitle("Assemblage métagénomique  ·  N50 {} pb  ·  plus grand contig {:.2f} Mb"
+    fig.suptitle("Metagenome assembly  ·  N50 {} bp  ·  largest contig {:.2f} Mb"
                  .format(d.get("N50", "?"), int(d.get("Largest contig", 0)) / 1e6),
                  x=0.005, ha="left", fontsize=12.5, fontweight="bold", color=INK)
     fig.tight_layout(rect=(0, 0, 1, 0.94))
-    return save(fig, outdir, "06_assemblage.png")
+    return save(fig, outdir, "06_assembly.png")
 
 
 def fig_qc(fastp_json, outdir):
@@ -307,38 +309,40 @@ def fig_qc(fastp_json, outdir):
         d = json.load(fh)
     before, after = d["summary"]["before_filtering"], d["summary"]["after_filtering"]
     metrics = [
-        ("lectures (M)", before["total_reads"] / 1e6, after["total_reads"] / 1e6),
+        ("reads (M)", before["total_reads"] / 1e6, after["total_reads"] / 1e6),
         ("bases (Gb)", before["total_bases"] / 1e9, after["total_bases"] / 1e9),
         ("Q30 (%)", before["q30_rate"] * 100, after["q30_rate"] * 100),
         ("GC (%)", before["gc_content"] * 100, after["gc_content"] * 100),
     ]
     fig, ax = plt.subplots(figsize=(7.8, 4.0))
-    x = np.arange(len(metrics)); w = 0.36
-    b = ax.bar(x - w / 2 - 0.01, [m[1] for m in metrics], w, label="avant",
-               color=SERIES_1, zorder=3)
-    a = ax.bar(x + w / 2 + 0.01, [m[2] for m in metrics], w, label="après",
-               color=SERIES_2, zorder=3)
-    ax.set_xticks(x); ax.set_xticklabels([m[0] for m in metrics], fontsize=9.5)
+    x = np.arange(len(metrics))
+    w = 0.36
+    bars_before = ax.bar(x - w / 2 - 0.01, [m[1] for m in metrics], w,
+                         label="before", color=SERIES_1, zorder=3)
+    bars_after = ax.bar(x + w / 2 + 0.01, [m[2] for m in metrics], w,
+                        label="after", color=SERIES_2, zorder=3)
+    ax.set_xticks(x)
+    ax.set_xticklabels([m[0] for m in metrics], fontsize=9.5)
     ax.yaxis.grid(True, color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
     ax.legend(frameon=False, loc="upper right", fontsize=9)
-    for bars in (b, a):
+    for bars in (bars_before, bars_after):
         for rect in bars:
             ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height() * 1.02,
                     "{:.1f}".format(rect.get_height()), ha="center",
                     fontsize=8, color=INK_SOFT)
-    finish(ax, "Contrôle qualité des lectures", "fastp — avant et après filtrage")
-    return save(fig, outdir, "07_qualite_lectures.png")
+    finish(ax, "Read quality control", "fastp - before and after filtering")
+    return save(fig, outdir, "07_read_quality.png")
 
 
 def write_krona_text(kraken, outdir):
-    """Krona input: count <TAB> rank1 <TAB> rank2 ... for KRONA_KTIMPORTTEXT."""
+    """Krona input: count <TAB> rank1 <TAB> rank2 ... for an ImportText step."""
     path = os.path.join(outdir, "kraken2.krona.txt")
     lineage, wrote = {}, 0
     with open(path, "w") as out:
         for r in kraken:
             if r["name"] == "unclassified":
-                out.write("{}\tnon classé\n".format(r["reads"]))
+                out.write("{}\tunclassified\n".format(r["reads"]))
                 wrote += 1
                 continue
             lineage[r["depth"]] = r["name"]
@@ -347,10 +351,10 @@ def write_krona_text(kraken, outdir):
                     del lineage[d]
             direct = r["reads"] if r["rank"] == "S" else 0
             if direct:
-                path_ = [lineage[d] for d in sorted(lineage)]
-                out.write("{}\t{}\n".format(direct, "\t".join(path_)))
+                out.write("{}\t{}\n".format(
+                    direct, "\t".join(lineage[d] for d in sorted(lineage))))
                 wrote += 1
-    print("  {}  ({} lignes)".format(path, wrote))
+    print("  {}  ({} lines)".format(path, wrote))
     return path
 
 
@@ -360,51 +364,51 @@ def main():
     res, outdir = sys.argv[1], sys.argv[2]
     os.makedirs(outdir, exist_ok=True)
 
-    def p(*parts):
+    def under(*parts):
         q = os.path.join(res, *parts)
         return q if os.path.exists(q) else None
 
-    print("Figures écrites :")
+    def first_in(subdir, suffix):
+        d = os.path.join(res, *subdir)
+        if not os.path.isdir(d):
+            return None
+        hits = sorted(f for f in os.listdir(d) if f.endswith(suffix))
+        return os.path.join(d, hits[0]) if hits else None
+
+    print("Figures written:")
     made = []
 
-    kraken_path = None
-    tax = os.path.join(res, "taxonomy", "kraken2")
-    if os.path.isdir(tax):
-        hits = [f for f in os.listdir(tax) if f.endswith("report.txt")]
-        if hits:
-            kraken_path = os.path.join(tax, hits[0])
+    kraken_path = first_in(("taxonomy", "kraken2"), "report.txt")
     if kraken_path:
         kraken = read_kraken(kraken_path)
         made += [fig_taxa_bar(kraken, outdir), fig_rank_profile(kraken, outdir)]
         write_krona_text(kraken, outdir)
 
-    mp = os.path.join(res, "taxonomy", "metaphlan4")
-    if os.path.isdir(mp):
-        hits = [f for f in os.listdir(mp) if f.endswith("_profile.txt")]
-        if hits:
-            made.append(fig_metaphlan(read_metaphlan(os.path.join(mp, hits[0])), outdir))
+    mp = first_in(("taxonomy", "metaphlan4"), "_profile.txt")
+    if mp:
+        made.append(fig_metaphlan(read_metaphlan(mp), outdir))
 
-    mdb = p("bin_qc", "drep", "drep_output", "data_tables", "Mdb.csv")
+    mdb = under("bin_qc", "drep", "drep_output", "data_tables", "Mdb.csv")
     if mdb:
         made.append(fig_mash_heatmap(mdb, outdir))
-    gi = p("bin_qc", "drep", "drep_output", "data_tables", "genomeInformation.csv")
+
+    gi = under("bin_qc", "drep", "drep_output", "data_tables", "genomeInformation.csv")
     if gi:
         made.append(fig_bin_scatter(gi, outdir))
 
-    qa = p("assembly", "quast", "assembly", "report.tsv") or p("assembly", "quast", "report.tsv")
+    qa = (under("assembly", "quast", "assembly", "report.tsv")
+          or under("assembly", "quast", "report.tsv"))
     if qa:
         made.append(fig_assembly(qa, outdir))
 
-    fp = os.path.join(res, "fastp")
-    if os.path.isdir(fp):
-        hits = [f for f in os.listdir(fp) if f.endswith(".json")]
-        if hits:
-            made.append(fig_qc(os.path.join(fp, hits[0]), outdir))
+    fp = first_in(("fastp",), ".json")
+    if fp:
+        made.append(fig_qc(fp, outdir))
 
     n = len([m for m in made if m])
-    print("\n{} figure(s) générée(s) dans {}".format(n, outdir))
+    print("\n{} figure(s) written to {}".format(n, outdir))
     if n == 0:
-        print("Aucune donnée exploitable trouvée sous " + res, file=sys.stderr)
+        print("No usable data found under " + res, file=sys.stderr)
 
 
 if __name__ == "__main__":

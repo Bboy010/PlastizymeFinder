@@ -2,9 +2,9 @@ process DBCAN2 {
     tag "$meta.id"
     label 'process_high'
 
-    // Le paquet a été renommé run-dbcan -> dbcan, et 4.1.4 n'existe plus : ni sur
-    // bioconda, ni comme image (quay.io ne publie que run-dbcan 2.0.11).
-    // La v5 change de CLI — voir le bloc script.
+    // The package was renamed run-dbcan -> dbcan, and 4.1.4 exists neither on
+    // bioconda nor as an image (quay.io only publishes run-dbcan 2.0.11).
+    // v5 changed the CLI - see the script block.
     conda 'bioconda::dbcan=5.2.9'
     container "${workflow.containerEngine in ['singularity', 'apptainer']
         ? 'https://depot.galaxyproject.org/singularity/dbcan:5.2.9--pyhdfd78af_0'
@@ -27,7 +27,7 @@ process DBCAN2 {
     def args   = task.ext.args   ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    # dbCAN 5 passe par des sous-commandes. Options vérifiées contre l'image 5.2.9 :
+    # dbCAN 5 works through subcommands. Options verified against image 5.2.9:
     #   run_dbcan CAZyme_annotation --mode --input_raw_data --output_dir --db_dir --threads
     run_dbcan CAZyme_annotation \\
         --mode protein \\
@@ -37,8 +37,8 @@ process DBCAN2 {
         --threads $task.cpus \\
         $args
 
-    # Les noms de sortie ont changé entre v4 et v5 : on prend le premier fichier
-    # correspondant plutôt que de coder un nom en dur.
+    # Output file names changed between v4 and v5, so match on a pattern rather
+    # than hard-coding a name.
     cp "\$(ls ${prefix}_dbcan/*overview* | head -1)" ${prefix}.overview.txt
     cp "\$(ls ${prefix}_dbcan/*hmmer*   2>/dev/null | head -1)" ${prefix}.hmmer.out   2>/dev/null || true
     cp "\$(ls ${prefix}_dbcan/*diamond* 2>/dev/null | head -1)" ${prefix}.diamond.out 2>/dev/null || true

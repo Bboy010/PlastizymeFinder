@@ -1,21 +1,21 @@
-# Dossiers de sortie Nextflow
+# Nextflow output directories
 work/
 results/
 
-# Répertoire de travail Nextflow
+# Nextflow working directory
 .nextflow/
 .nextflow.log*
 .nextflow.pid
 .nextflow.history
 
-# Fichiers temporaires
+# Temporary files
 *.tmp
 *.temp
 *.swp
 *.swo
 *~
 
-# Environnements Python/Conda
+# Python/Conda environments
 .conda/
 __pycache__/
 *.pyc
@@ -25,7 +25,7 @@ __pycache__/
 # Logs
 *.log
 
-# Fichiers système
+# System files
 .DS_Store
 Thumbs.db
 
@@ -40,5 +40,11 @@ singularity/
 # Auto-downloaded database cache (params.db_cache_dir)
 databases/
 
-# Checklist de finalisation (fichier de travail local)
+# Local working notes, never pushed
 checklist.md
+JULES_REPORT.md
+
+# Figures are rendered per run into <outdir>/figures - see docs/figures/README.md
+docs/figures/*.png
+docs/figures/*.html
+docs/figures/*.txt
