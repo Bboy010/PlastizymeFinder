@@ -5,7 +5,7 @@ process PRODIGAL {
     conda 'bioconda::prodigal=2.6.3'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/prodigal:2.6.3--hec16e2b_5' :
-        'biocontainers/prodigal:2.6.3--hec16e2b_5' }"
+        'quay.io/biocontainers/prodigal:2.6.3--hec16e2b_5' }"
 
     input:
     tuple val(meta), path(fasta)

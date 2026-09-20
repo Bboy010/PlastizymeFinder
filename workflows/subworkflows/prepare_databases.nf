@@ -21,15 +21,29 @@ workflow PREPARE_DATABASES {
     main:
     def ch_versions = channel.empty()
 
+    // A database that no enabled stage consumes is never fetched, so each
+    // channel needs a defined empty default.
+    def ch_kraken2_db    = channel.empty()
+    def ch_metaphlan4_db = channel.empty()
+    def ch_dbcan2_db     = channel.empty()
+    def ch_eggnog_db     = channel.empty()
+    def ch_kofamscan_db  = channel.empty()
+    def ch_gtdbtk_db     = channel.empty()
+    def ch_petase_ref    = channel.empty()
+    def ch_cdd_db        = channel.empty()
+
     // -----------------------------------------------------------------------
     // Kraken2
     // -----------------------------------------------------------------------
     if (params.kraken2_db) {
         ch_kraken2_db = channel.fromPath(params.kraken2_db, type: 'dir', checkIfExists: true)
     } else {
-        KRAKEN2_DB_DOWNLOAD(params.db_cache_dir)
-        ch_kraken2_db = KRAKEN2_DB_DOWNLOAD.out.db
-        ch_versions   = ch_versions.mix(KRAKEN2_DB_DOWNLOAD.out.versions)
+        if (!params.skip_taxonomy) {
+            // only fetched when the stage that uses it runs
+            KRAKEN2_DB_DOWNLOAD(params.db_cache_dir)
+            ch_kraken2_db = KRAKEN2_DB_DOWNLOAD.out.db
+            ch_versions   = ch_versions.mix(KRAKEN2_DB_DOWNLOAD.out.versions)
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -38,9 +52,12 @@ workflow PREPARE_DATABASES {
     if (params.metaphlan4_db) {
         ch_metaphlan4_db = channel.fromPath(params.metaphlan4_db, type: 'dir', checkIfExists: true)
     } else {
-        METAPHLAN4_DB_DOWNLOAD(params.db_cache_dir)
-        ch_metaphlan4_db = METAPHLAN4_DB_DOWNLOAD.out.db
-        ch_versions      = ch_versions.mix(METAPHLAN4_DB_DOWNLOAD.out.versions)
+        if (!params.skip_taxonomy) {
+            // only fetched when the stage that uses it runs
+            METAPHLAN4_DB_DOWNLOAD(params.db_cache_dir)
+            ch_metaphlan4_db = METAPHLAN4_DB_DOWNLOAD.out.db
+            ch_versions      = ch_versions.mix(METAPHLAN4_DB_DOWNLOAD.out.versions)
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -49,51 +66,59 @@ workflow PREPARE_DATABASES {
     if (params.dbcan2_db) {
         ch_dbcan2_db = channel.fromPath(params.dbcan2_db, type: 'dir', checkIfExists: true)
     } else {
-        DBCAN2_DB_DOWNLOAD(params.db_cache_dir)
-        ch_dbcan2_db = DBCAN2_DB_DOWNLOAD.out.db
-        ch_versions  = ch_versions.mix(DBCAN2_DB_DOWNLOAD.out.versions)
+        if (!params.skip_annotation) {
+            // only fetched when the stage that uses it runs
+            DBCAN2_DB_DOWNLOAD(params.db_cache_dir)
+            ch_dbcan2_db = DBCAN2_DB_DOWNLOAD.out.db
+            ch_versions  = ch_versions.mix(DBCAN2_DB_DOWNLOAD.out.versions)
+        }
     }
 
     // -----------------------------------------------------------------------
     // eggNOG
     // -----------------------------------------------------------------------
-    def ch_eggnog_db
     if (params.eggnog_db) {
         ch_eggnog_db = channel.fromPath(params.eggnog_db, type: 'dir', checkIfExists: true)
     } else {
-        EGGNOG_DB_DOWNLOAD(params.db_cache_dir)
-        ch_eggnog_db = EGGNOG_DB_DOWNLOAD.out.db
-        ch_versions  = ch_versions.mix(EGGNOG_DB_DOWNLOAD.out.versions)
+        if (!params.skip_annotation) {
+            // only fetched when the stage that uses it runs
+            EGGNOG_DB_DOWNLOAD(params.db_cache_dir)
+            ch_eggnog_db = EGGNOG_DB_DOWNLOAD.out.db
+            ch_versions  = ch_versions.mix(EGGNOG_DB_DOWNLOAD.out.versions)
+        }
     }
 
     // -----------------------------------------------------------------------
     // KofamScan
     // -----------------------------------------------------------------------
-    def ch_kofamscan_db
     if (params.kofamscan_db) {
         ch_kofamscan_db = channel.fromPath(params.kofamscan_db, type: 'dir', checkIfExists: true)
     } else {
-        KOFAMSCAN_DB_DOWNLOAD(params.db_cache_dir)
-        ch_kofamscan_db = KOFAMSCAN_DB_DOWNLOAD.out.db
-        ch_versions     = ch_versions.mix(KOFAMSCAN_DB_DOWNLOAD.out.versions)
+        if (!params.skip_annotation) {
+            // only fetched when the stage that uses it runs
+            KOFAMSCAN_DB_DOWNLOAD(params.db_cache_dir)
+            ch_kofamscan_db = KOFAMSCAN_DB_DOWNLOAD.out.db
+            ch_versions     = ch_versions.mix(KOFAMSCAN_DB_DOWNLOAD.out.versions)
+        }
     }
 
     // -----------------------------------------------------------------------
     // GTDB-tk
     // -----------------------------------------------------------------------
-    def ch_gtdbtk_db
     if (params.gtdbtk_db) {
         ch_gtdbtk_db = channel.fromPath(params.gtdbtk_db, type: 'dir', checkIfExists: true)
     } else {
-        GTDBTK_DB_DOWNLOAD(params.db_cache_dir)
-        ch_gtdbtk_db = GTDBTK_DB_DOWNLOAD.out.db
-        ch_versions  = ch_versions.mix(GTDBTK_DB_DOWNLOAD.out.versions)
+        if (!params.skip_annotation) {
+            // only fetched when the stage that uses it runs
+            GTDBTK_DB_DOWNLOAD(params.db_cache_dir)
+            ch_gtdbtk_db = GTDBTK_DB_DOWNLOAD.out.db
+            ch_versions  = ch_versions.mix(GTDBTK_DB_DOWNLOAD.out.versions)
+        }
     }
 
     // -----------------------------------------------------------------------
     // PETase reference PDB for TM-Align
     // -----------------------------------------------------------------------
-    def ch_petase_ref
     if (params.petase_ref) {
         ch_petase_ref = channel.fromPath(params.petase_ref, checkIfExists: true)
     } else {
@@ -105,13 +130,15 @@ workflow PREPARE_DATABASES {
     // -----------------------------------------------------------------------
     // NCBI CDD — conserved-domain profiles for local RPS-BLAST (Stage 8)
     // -----------------------------------------------------------------------
-    def ch_cdd_db
     if (params.cdd_db) {
         ch_cdd_db = channel.fromPath(params.cdd_db, type: 'dir', checkIfExists: true)
     } else {
-        CDD_DB_DOWNLOAD(params.db_cache_dir, params.cdd_db_set)
-        ch_cdd_db   = CDD_DB_DOWNLOAD.out.db
-        ch_versions = ch_versions.mix(CDD_DB_DOWNLOAD.out.versions)
+        if (!params.skip_structure && !params.skip_plastizyme) {
+            // only fetched when the stage that uses it runs
+            CDD_DB_DOWNLOAD(params.db_cache_dir, params.cdd_db_set)
+            ch_cdd_db   = CDD_DB_DOWNLOAD.out.db
+            ch_versions = ch_versions.mix(CDD_DB_DOWNLOAD.out.versions)
+        }
     }
 
     emit:

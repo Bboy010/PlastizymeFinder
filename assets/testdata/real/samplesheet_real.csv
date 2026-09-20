@@ -1,0 +1,3 @@
+sample,fastq_1,fastq_2
+Bietry_1,assets/testdata/real/Bietry_1_R1.fastq.gz,assets/testdata/real/Bietry_1_R2.fastq.gz
+Kassembie_1,assets/testdata/real/Kassembie_1_R1.fastq.gz,assets/testdata/real/Kassembie_1_R2.fastq.gz

@@ -5,7 +5,7 @@ process METAPHLAN4 {
     conda 'bioconda::metaphlan=4.1.0'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/metaphlan:4.1.0--pyhca03a8a_0' :
-        'biocontainers/metaphlan:4.1.0--pyhca03a8a_0' }"
+        'quay.io/biocontainers/metaphlan:4.1.0--pyhca03a8a_0' }"
 
     input:
     tuple val(meta), path(reads)

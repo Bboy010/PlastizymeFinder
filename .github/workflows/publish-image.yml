@@ -1,0 +1,53 @@
+name: Publish MeTarEnz image
+
+# The MeTarEnz runtime image is the upstream one plus procps, which Nextflow
+# needs to collect task metrics. Publishing it to GHCR is what makes the
+# pipeline runnable outside CI: the module pulls it by name, so no one has to
+# build it by hand.
+#
+# GITHUB_TOKEN already carries packages:write, so nothing has to be configured.
+# The package is created private on first push; make it public once from
+# https://github.com/users/Bboy010/packages so that anonymous pulls work.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'containers/metarenz/**'
+      - '.github/workflows/publish-image.yml'
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/plastizymefinder-metarenz
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The tag is pinned rather than :latest, because the module pins it too:
+      # a pipeline that silently changes tool version is not reproducible.
+      - uses: docker/build-push-action@v6
+        with:
+          context: containers/metarenz
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:1.0
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Check the image runs
+        run: |
+          docker run --rm --entrypoint "" ${{ env.IMAGE }}:1.0 \
+              bash -c 'ps --version > /dev/null && python /home/MeTarEnz/metarenz.py -h | head -3'

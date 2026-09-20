@@ -5,7 +5,7 @@ process BOWTIE2_BUILD {
     conda "bioconda::bowtie2=2.5.3"
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/bowtie2:2.5.3--py310h8d7afc0_0' :
-        'biocontainers/bowtie2:2.5.3--py310h8d7afc0_0'}"
+        'quay.io/biocontainers/bowtie2:2.5.4--he96a11b_7'}"
 
     input:
     tuple val(meta), path(fasta)

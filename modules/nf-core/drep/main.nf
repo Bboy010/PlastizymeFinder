@@ -5,7 +5,7 @@ process DREP {
     conda 'bioconda::drep=3.4.5 bioconda::checkm-genome "conda-forge::pandas<2.2"'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/drep:3.4.5--pyhdfd78af_0' :
-        'biocontainers/drep:3.4.5--pyhdfd78af_0' }"
+        'quay.io/biocontainers/drep:3.4.5--pyhdfd78af_0' }"
 
     input:
     tuple val(meta), path(bins, stageAs: 'input_bins/*')

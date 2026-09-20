@@ -14,7 +14,7 @@ process DBCAN2_DB_DOWNLOAD {
     conda "bioconda::dbcan"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/dbcan:4.0.0--pyhdfd78af_0' :
-        'quay.io/biocontainers/dbcan:4.0.0--pyhdfd78af_0' }"
+        'quay.io/biocontainers/dbcan:5.2.9--pyhdfd78af_0' }"
 
     input:
     val cache_dir

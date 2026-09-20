@@ -4,7 +4,7 @@ process MULTIQC {
     conda 'bioconda::multiqc=1.21'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/multiqc:1.21--pyhdfd78af_0' :
-        'biocontainers/multiqc:1.21--pyhdfd78af_0' }"
+        'quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0' }"
 
     input:
     // '?/*' gives each file its own numbered directory, so two reports

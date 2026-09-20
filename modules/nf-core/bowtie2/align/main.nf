@@ -5,7 +5,7 @@ process BOWTIE2_ALIGN {
     conda 'bioconda::bowtie2=2.5.3 bioconda::samtools=1.19'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/mulled-v2-ac74a7f02cebcfcc07d8e8d1a750d2acf4f99599:f70b2a4d0353cdd6dc64edde26e0b8f6' :
-        'biocontainers/mulled-v2-ac74a7f02cebcfcc07d8e8d1a750d2acf4f99599:f70b2a4d0353cdd6dc64edde26e0b8f6' }"
+        'staphb/bowtie2:2.5.3' }"
 
     input:
     tuple val(meta), path(reads)

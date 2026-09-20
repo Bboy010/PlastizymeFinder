@@ -5,7 +5,7 @@ process KRAKEN2 {
     conda 'bioconda::kraken2=2.1.3 bioconda::krakentools=1.2'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/mulled-v2-5799ab18b5fc678e5ddc5b14f99c9254caacacd7:d36906b073db2c9e71edd5a34e47ce56d95d8f74-0' :
-        'biocontainers/mulled-v2-5799ab18b5fc678e5ddc5b14f99c9254caacacd7:d36906b073db2c9e71edd5a34e47ce56d95d8f74-0' }"
+        'quay.io/biocontainers/kraken2:2.1.3--pl5321hdcf5f25_0' }"
 
     input:
     tuple val(meta), path(reads)

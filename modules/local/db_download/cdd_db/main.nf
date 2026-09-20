@@ -21,7 +21,7 @@ process CDD_DB_DOWNLOAD {
     conda "conda-forge::wget=1.21.4"
     container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container
         ? 'https://depot.galaxyproject.org/singularity/wget:1.21.4'
-        : 'biocontainers/wget:1.21.4'}"
+        : 'quay.io/biocontainers/wget:1.21.4'}"
 
     input:
     val cache_dir

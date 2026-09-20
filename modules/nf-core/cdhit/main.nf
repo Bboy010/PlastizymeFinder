@@ -5,7 +5,7 @@ process CDHIT {
     conda 'bioconda::cd-hit=4.8.1'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/cd-hit:4.8.1--hdbdd923_2' :
-        'biocontainers/cd-hit:4.8.1--hdbdd923_2' }"
+        'quay.io/biocontainers/cd-hit:4.8.1--hdbcaa40_2' }"
 
     input:
     tuple val(meta), path(fasta)

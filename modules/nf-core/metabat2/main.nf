@@ -5,7 +5,7 @@ process METABAT2 {
     conda 'bioconda::metabat2=2.17'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/metabat2:2.17--h4da6f23_0' :
-        'biocontainers/metabat2:2.17--h4da6f23_0' }"
+        'quay.io/biocontainers/metabat2:2.18--h6f16272_0' }"
 
     input:
     tuple val(meta), path(fasta)

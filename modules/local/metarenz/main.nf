@@ -12,7 +12,7 @@ process METARENZ {
     //
     // Upstream tool : https://github.com/mehdiforoozandeh/MeTarEnz
     // Upstream image: https://hub.docker.com/r/mforooz/metarenz
-    container 'plastizymefinder/metarenz:1.0'
+    container 'ghcr.io/bboy010/plastizymefinder-metarenz:1.0'
 
     input:
     // Staged into separate directories so a query and a database that happen to

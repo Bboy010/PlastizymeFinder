@@ -176,7 +176,12 @@ workflow PLASTIZYMEFINDER {
     // CD-search → AlphaFold2 → TM-Align (vs known PETase structures)
     // -----------------------------------------------------------------------
     if (!params.skip_structure && !params.skip_plastizyme) {
-        STRUCTURE_PREDICTION(ch_candidates, ch_petase_ref, ch_cdd_db)
+        STRUCTURE_PREDICTION(
+            ch_candidates,
+            ch_petase_ref,
+            ch_cdd_db,
+            params.colabfold_weights ? channel.fromPath(params.colabfold_weights, checkIfExists: true) : []
+        )
         ch_versions = ch_versions.mix(STRUCTURE_PREDICTION.out.versions)
     }
 

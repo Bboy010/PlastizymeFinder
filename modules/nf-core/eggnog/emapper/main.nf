@@ -5,7 +5,7 @@ process EGGNOG_MAPPER {
     conda 'bioconda::eggnog-mapper=2.1.12'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/eggnog-mapper:2.1.12--pyhdfd78af_0' :
-        'biocontainers/eggnog-mapper:2.1.12--pyhdfd78af_0' }"
+        'quay.io/biocontainers/eggnog-mapper:2.1.12--pyhdfd78af_0' }"
 
     input:
     tuple val(meta), path(fasta)

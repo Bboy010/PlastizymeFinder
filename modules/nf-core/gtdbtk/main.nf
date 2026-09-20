@@ -5,7 +5,7 @@ process GTDBTK_CLASSIFYWF {
     conda 'bioconda::gtdbtk=2.4.0 "pydantic<2" "python<3.12" "numpy<2"'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/gtdbtk:2.4.0--pyhdfd78af_1' :
-        'biocontainers/gtdbtk:2.4.0--pyhdfd78af_1' }"
+        'quay.io/biocontainers/gtdbtk:2.4.0--pyhdfd78af_1' }"
 
     input:
     tuple val(meta), path(bins, stageAs: 'input_bins/*')
