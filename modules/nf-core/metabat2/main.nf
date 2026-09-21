@@ -38,25 +38,22 @@ process METABAT2 {
         -t $task.cpus \\
         $args
 
-    # Collect unbinned contigs
-    # (sequences in fasta not present in any bin)
-    cat bins/${prefix}.bin.*.fa 2>/dev/null | \\
-        grep '^>' | sed 's/>//' | sort > binned_ids.txt
-    python3 -c "
-    import gzip, sys
-    binned = set(open('binned_ids.txt').read().split())
-    out = open('${prefix}.unbinned.fa', 'w')
-    opener = gzip.open if '${fasta}'.endswith('.gz') else open
-    fasta = opener('$fasta', 'rt')
-    write = False
-    for line in fasta:
-        if line.startswith('>'):
-            write = line[1:].split()[0] not in binned
-        if write:
-            out.write(line)
-    fasta.close()
-    out.close()
-    "
+    # Collect unbinned contigs (sequences in the assembly that no bin claimed).
+    # awk rather than python: the MetaBAT2 container ships no interpreter.
+    cat bins/${prefix}.bin.*.fa 2>/dev/null | \
+        awk '/^>/ { sub(/^>/, ""); print \$1 }' | sort -u > binned_ids.txt
+
+    if [[ "${fasta}" == *.gz ]]; then
+        decompress="zcat"
+    else
+        decompress="cat"
+    fi
+
+    \$decompress $fasta | awk '
+        NR == FNR { binned[\$1] = 1; next }
+        /^>/      { id = substr(\$1, 2); keep = !(id in binned) }
+        keep      { print }
+    ' binned_ids.txt - > ${prefix}.unbinned.fa
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

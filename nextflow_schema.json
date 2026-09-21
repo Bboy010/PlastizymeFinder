@@ -146,6 +146,18 @@
                     "description": "Maximum bin contamination (%) for dRep filtering.",
                     "default": 10,
                     "fa_icon": "fas fa-percentage"
+                },
+                "drep_min_length": {
+                    "type": "integer",
+                    "description": "Minimum bin length (bp) for dRep filtering. Lower it for small test datasets.",
+                    "default": 50000,
+                    "fa_icon": "fas fa-ruler-horizontal"
+                },
+                "drep_skip_secondary": {
+                    "type": "boolean",
+                    "description": "Skip dRep secondary (fastANI) clustering. fastANI cannot compare genomes shorter than its 3 kb fragment length.",
+                    "default": false,
+                    "fa_icon": "fas fa-forward"
                 }
             }
         },
