@@ -25,9 +25,16 @@ process EGGNOG_MAPPER {
     def args     = task.ext.args   ?: ''
     def prefix   = task.ext.prefix ?: "${meta.id}"
     def db_arg   = db_type         ?: 'proteins'
+    // emapper hands the query straight to DIAMOND, which rejects a compressed
+    // file with "Error detecting input file format".
+    def decompress = fasta.name.endsWith('.gz')
+        ? "gzip -cd ${fasta} > query.faa"
+        : "ln -s ${fasta} query.faa"
     """
+    $decompress
+
     emapper.py \\
-        -i $fasta \\
+        -i query.faa \\
         --itype ${db_arg} \\
         --data_dir $db \\
         --output ${prefix} \\

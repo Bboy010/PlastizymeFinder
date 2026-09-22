@@ -21,7 +21,14 @@ process KOFAMSCAN {
     script:
     def args   = task.ext.args   ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // exec_annotation reads the query as text and dies on a compressed file
+    // with "invalid byte sequence in UTF-8", so hand it plain FASTA.
+    def decompress = fasta.name.endsWith('.gz')
+        ? "gzip -cd ${fasta} > query.faa"
+        : "ln -s ${fasta} query.faa"
     """
+    $decompress
+
     exec_annotation \\
         --ko-list ${db}/ko_list \\
         --profile ${db}/profiles \\
@@ -29,7 +36,7 @@ process KOFAMSCAN {
         -f detail-tsv \\
         -o ${prefix}.kofamscan.tsv \\
         $args \\
-        $fasta
+        query.faa
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

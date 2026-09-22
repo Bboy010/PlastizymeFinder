@@ -15,6 +15,7 @@ include { KOFAMSCAN_DB_DOWNLOAD  } from '../../modules/local/db_download/kofamsc
 include { GTDBTK_DB_DOWNLOAD     } from '../../modules/local/db_download/gtdbtk_db/main'
 include { PETASE_REF_DOWNLOAD    } from '../../modules/local/db_download/petase_ref/main'
 include { CDD_DB_DOWNLOAD        } from '../../modules/local/db_download/cdd_db/main'
+include { CHECKM2_DB_DOWNLOAD    } from '../../modules/local/db_download/checkm2_db/main'
 
 workflow PREPARE_DATABASES {
 
@@ -31,6 +32,7 @@ workflow PREPARE_DATABASES {
     def ch_gtdbtk_db     = channel.empty()
     def ch_petase_ref    = channel.empty()
     def ch_cdd_db        = channel.empty()
+    def ch_checkm2_db    = channel.empty()
 
     // -----------------------------------------------------------------------
     // Kraken2
@@ -141,6 +143,20 @@ workflow PREPARE_DATABASES {
         }
     }
 
+    // -----------------------------------------------------------------------
+    // CheckM2 — completeness/contamination model for dRep's --genomeInfo
+    // -----------------------------------------------------------------------
+    if (params.checkm_db) {
+        ch_checkm2_db = channel.fromPath(params.checkm_db, checkIfExists: true)
+    } else {
+        if (!params.skip_drep_checkm) {
+            // only fetched when the stage that uses it runs
+            CHECKM2_DB_DOWNLOAD(params.db_cache_dir)
+            ch_checkm2_db = CHECKM2_DB_DOWNLOAD.out.db
+            ch_versions   = ch_versions.mix(CHECKM2_DB_DOWNLOAD.out.versions)
+        }
+    }
+
     emit:
     kraken2_db    = ch_kraken2_db
     metaphlan4_db = ch_metaphlan4_db
@@ -150,5 +166,6 @@ workflow PREPARE_DATABASES {
     gtdbtk_db     = ch_gtdbtk_db
     petase_ref    = ch_petase_ref
     cdd_db        = ch_cdd_db
+    checkm2_db    = ch_checkm2_db
     versions      = ch_versions
 }

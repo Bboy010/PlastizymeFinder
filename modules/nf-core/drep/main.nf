@@ -9,7 +9,11 @@ process DREP {
 
     input:
     tuple val(meta), path(bins, stageAs: 'input_bins/*')
-    path  checkm_table   // optional genome_info.csv with completeness/contamination
+    // Optional genome_info.csv (genome,completeness,contamination). dRep cannot
+    // compute it here: this container has no CheckM, and the CheckM2 database on
+    // this machine is not the format CheckM 1 reads. Supply the table from a
+    // dedicated quality step, or dRep filters on size and ANI alone.
+    path  checkm_table
 
     output:
     tuple val(meta), path('drep_output/dereplicated_genomes/*.fa'), emit: passed_bins, optional: true
@@ -25,10 +29,7 @@ process DREP {
     // Without a CheckM genomeInfo table dRep has nothing to score completeness
     // or contamination against, so drop thresholds that could not be applied.
     def filter_args  = checkm_table ? args : args.replaceAll(/-(comp|con)\s+\S+/, '').replaceAll(/\s+/, ' ').trim()
-    def checkm_setup = params.checkm_db ? "checkm data setRoot ${params.checkm_db}" : ''
     """
-    $checkm_setup
-
     # A sample whose bins all fail dRep's filters is a biological outcome, not
     # a pipeline error: dRep exits non-zero, and we let the sample drop rather
     # than kill the run. Any other failure stays fatal.

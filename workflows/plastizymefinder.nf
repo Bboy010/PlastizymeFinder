@@ -75,6 +75,7 @@ workflow PLASTIZYMEFINDER {
     def ch_gtdbtk_db     = PREPARE_DATABASES.out.gtdbtk_db
     def ch_petase_ref    = PREPARE_DATABASES.out.petase_ref  // 6EQE or user-provided PDB
     def ch_cdd_db        = PREPARE_DATABASES.out.cdd_db      // CDD profiles for RPS-BLAST
+    def ch_checkm2_db    = PREPARE_DATABASES.out.checkm2_db  // dRep --genomeInfo quality model
     def ch_pet_db        = channel.fromPath(params.pet_db)
 
     ch_versions = ch_versions.mix(PREPARE_DATABASES.out.versions)
@@ -130,7 +131,7 @@ workflow PLASTIZYMEFINDER {
     // Stage 5 — Bin Quality Evaluation
     // QUAST per bin + dRep deduplication/filtering
     // -----------------------------------------------------------------------
-    BIN_QC(ch_bins)
+    BIN_QC(ch_bins, ch_checkm2_db)
 
     def ch_hq_bins  = BIN_QC.out.passed_bins
     ch_versions = ch_versions.mix(BIN_QC.out.versions)

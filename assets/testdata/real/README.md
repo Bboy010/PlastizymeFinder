@@ -1,36 +1,42 @@
 # Real-data test subset
 
-The first 100,000 read pairs of two of the five samples published with
-Hongo *et al.* (2026), one per site and both sediment, so the two-site design of
-the study is represented:
+The first 100,000 read pairs of the two samples that the study found PET
+hydrolases in, so the smoke test runs on the material the pipeline is meant to
+work on:
 
-| Sample | Site | Matrix |
-|---|---|---|
-| `Bietry_1` | Biétry bay, Ébrié lagoon | sediment |
-| `Kassembie_1` | Kassembié lake | sediment |
+| Sample | Site | Matrix | PET hydrolases reported |
+|---|---|---|---|
+| `Bietry_1` | Biétry bay, Ébrié lagoon | sediment | BietPETase1, 3, 4 |
+| `Bietry_3` | Biétry bay, Ébrié lagoon | sediment | BietPETase2 |
 
 Source: <https://doi.org/10.5281/zenodo.19146671> (BioProject PRJNA1444035).
 R1 and R2 keep the order of the published files, so taking the same prefix from
-each preserves pairing. 23 MB in total, against ~26 GB for the full deposit.
+each preserves pairing. 22 MB in total, against ~26 GB for the full deposit.
 
 ## What this subset is for
 
 It runs the real tools on real reads in minutes rather than days. It is a smoke
-test, not a reproduction: at this depth MEGAHIT recovers only a handful of
-contigs above 1,500 bp, so MetaBAT2 produces no bin and stage 7 screens the
-unbinned contigs instead. The code path is exercised end to end; the biology is
-not.
+test, not a reproduction, and it **cannot** recover the published enzymes: at
+1/350th of the depth MEGAHIT assembles a handful of contigs and Prodigal calls
+about fifteen proteins, while BietPETase1 came from contig `k141_499934` of a
+MAG built from the whole sample. The code path is exercised end to end; the
+biology is not.
 
-Reproducing the published results needs the full deposit — see
+## Testing the screening stage on known enzymes
+
+Stage 7 is validated separately, against the four sequences the study published
+(`Table_S4_BietPETase_sequences.fasta`). MeTarEnz in `ps` mode, with the
+158-sequence PET_DB and a minimum bit-score of 250, recovers all four and
+nothing else out of 204 sequences:
+
+| Enzyme | Best PAZy match | Bit-score |
+|---|---|---|
+| BietPETase1 | `sp\|P19833\|LIP1_MORS1` | 426 |
+| BietPETase2 | `sp\|P19833\|LIP1_MORS1` | 464 |
+| BietPETase3 | `sp\|P19833\|LIP1_MORS1` | 443 |
+| BietPETase4 | `sp\|P19833\|LIP1_MORS1` | 438 |
+
+None of the 200 decoy proteins passed the threshold.
+
+Reproducing the published results from reads needs the full deposit — see
 `docs/usage.md`.
-
-## Regenerating it
-
-```bash
-for s in Bietry_1 Kassembie_1; do
-  for r in R1 R2; do
-    curl -sL "https://zenodo.org/records/19146671/files/${s}_${r}.fastq.gz?download=1" \
-      | zcat | head -n 400000 | gzip -c > "${s}_${r}.fastq.gz"
-  done
-done
-```

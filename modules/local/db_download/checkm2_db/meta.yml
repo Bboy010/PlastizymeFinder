@@ -1,0 +1,34 @@
+name: checkm2_db_download
+description: Download the CheckM2 DIAMOND reference database
+keywords:
+  - CheckM2
+  - completeness
+  - contamination
+  - database download
+tools:
+  - checkm2:
+      description: |
+        CheckM2 ships a `database --download` subcommand that fetches its
+        pre-trained DIAMOND reference database (~3 GB).
+      homepage: https://github.com/chklovski/CheckM2
+      doi: 10.1038/s41592-023-01940-w
+      licence: ["MIT"]
+      identifier: biotools:checkm2
+input:
+  - - cache_dir:
+        type: string
+        description: Directory used as storeDir, so the database is downloaded once and reused
+output:
+  db:
+    - "checkm2_db":
+        type: directory
+        description: Directory containing the CheckM2 DIAMOND database (.dmnd)
+  versions:
+    - versions.yml:
+        type: file
+        description: File containing software versions
+
+authors:
+  - "@Bboy010"
+maintainers:
+  - "@Bboy010"

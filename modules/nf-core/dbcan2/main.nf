@@ -27,7 +27,14 @@ process DBCAN2 {
     script:
     def args   = task.ext.args   ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // run_dbcan passes the query to HMMER and DIAMOND, neither of which reads
+    // a compressed file.
+    def decompress = fasta.name.endsWith('.gz')
+        ? "gzip -cd ${fasta} > query.faa"
+        : "ln -s ${fasta} query.faa"
     """
+    $decompress
+
     # The HMMdb carries its release in the filename (V8, V12, ...), so find it
     # rather than hard-coding a version the database may not be.
     hmmdb=\$(cd $db && ls dbCAN-HMMdb-*.txt 2>/dev/null | head -1)
@@ -36,12 +43,13 @@ process DBCAN2 {
         exit 1
     fi
 
-    run_dbcan $fasta protein \
+    run_dbcan query.faa protein \
         --db_dir $db \
         --dbCANFile "\$hmmdb" \
         --tools hmmer diamond \
         --out_dir ${prefix}_dbcan \
-        --dbcan_thread $task.cpus \
+        --dia_cpu $task.cpus \
+        --hmm_cpu $task.cpus \
         $args
 
     cp ${prefix}_dbcan/overview.txt ${prefix}.overview.txt

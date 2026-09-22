@@ -19,7 +19,7 @@ without — not assumed from the directory name.
 |---|---|---|---|
 | 2 | `kraken2_db` | `/mnt/e/Bio-informatics/db/minikraken2` | `hash.k2d`, `opts.k2d`, `taxo.k2d` |
 | 2 | `metaphlan4_db` | `/mnt/e/Bio-informatics/db/mpa_db` | `mpa_vJan25_CHOCOPhlAnSGB_202503` + `.bt2l` + `.pkl` |
-| 4 | `checkm_db` | `/mnt/e/Bio-informatics/db/CheckM2_database` | `uniref100.KO.1.dmnd` |
+| 4 | `checkm_db` | `/mnt/e/Bio-informatics/db/CheckM2_database/CheckM2_database/uniref100.KO.1.dmnd` | 3.08 GB, matches the checksum in `CONTENTS.json` (a second, 761 MB file sits one level up and is not the real database) |
 | 5 | `gtdbtk_db` | `/mnt/e/Bio-informatics/db/release226` | `markers`, `pplacer`, `taxonomy`, `skani`, `msa` |
 | 6 | `dbcan2_db` | `/mnt/e/Bio-informatics/db/db_can` | `CAZy.dmnd`, `dbCAN-HMMdb-V8.txt` + `.h3[fimp]` |
 | 6 | `eggnog_db` | `~/eggnog_data` | `eggnog.db` (41 GB), `eggnog_proteins.dmnd` (9.3 GB) |

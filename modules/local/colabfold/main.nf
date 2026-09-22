@@ -30,9 +30,11 @@ process COLABFOLD {
     path weights
 
     output:
-    tuple val(meta), path("*.colabfold.pdb"), emit: pdb
-    tuple val(meta), path("*.plddt.tsv")    , emit: plddt
-    tuple val(meta), path("raw/**")         , emit: raw
+    // All three are optional: with no candidate there is nothing to fold, and
+    // emitting a placeholder instead would hand TM-Align an empty structure.
+    tuple val(meta), path("*.colabfold.pdb"), emit: pdb,   optional: true
+    tuple val(meta), path("*.plddt.tsv")    , emit: plddt, optional: true
+    tuple val(meta), path("raw/**")         , emit: raw,   optional: true
     path "versions.yml"                     , emit: versions
 
     when:
@@ -47,9 +49,7 @@ process COLABFOLD {
     """
     # An empty candidate FASTA is a legitimate outcome upstream, not an error.
     if [ ! -s ${fasta} ]; then
-        mkdir -p raw
-        touch ${prefix}.colabfold.pdb ${prefix}.plddt.tsv
-        echo "WARN: ${fasta} is empty - nothing to fold for ${prefix}" >&2
+        echo "WARN: ${fasta} is empty - nothing to fold for ${prefix}, no structure emitted" >&2
     else
         colabfold_batch \
             ${fasta} \
