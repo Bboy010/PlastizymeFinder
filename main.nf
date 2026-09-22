@@ -26,9 +26,26 @@ include { PLASTIZYMEFINDER } from './workflows/plastizymefinder'
 */
 
 workflow {
+    // --help and --version are handled before anything else so they work
+    // without an input samplesheet. The help text is rendered from
+    // nextflow_schema.json, which keeps it in sync with the real parameters.
+    if (params.help) {
+        log.info(Utils.help("${projectDir}/nextflow_schema.json", workflow.manifest))
+        return
+    }
+
+    if (params.version) {
+        log.info("${workflow.manifest.name} ${workflow.manifest.version}")
+        return
+    }
+
     // Validate mandatory parameters
     if (!params.input) {
         error "ERROR: Please provide an input samplesheet with --input <samplesheet.csv>"
+    }
+
+    if (!(params.metarenz_mode in ['cs', 'ps'])) {
+        error "ERROR: --metarenz_mode must be 'cs' (nucleotide contigs, BLASTX) or 'ps' (proteins, BLASTP), got '${params.metarenz_mode}'"
     }
 
     if (!params.pet_db) {

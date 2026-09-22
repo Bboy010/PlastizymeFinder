@@ -36,4 +36,14 @@ process KOFAMSCAN {
         kofamscan: \$( exec_annotation --version 2>&1 | sed 's/KofamScan //' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    touch ${prefix}.tsv
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        kofamscan: "stub"
+    END_VERSIONS
+    """
 }

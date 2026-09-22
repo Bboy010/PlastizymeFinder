@@ -43,7 +43,7 @@ workflow ASSEMBLY_ANNOTATION {
     // Ensure reads and index are matched by sample ID before alignment
     def ch_reads_for_align = reads
         .join(ch_index, by: 0)
-        .map { meta, read_files, index -> [ meta, read_files ] }
+        .map { meta, read_files, _index -> [meta, read_files] }
 
     BOWTIE2_ALIGN_CONTIGS(ch_reads_for_align, ch_index, true, true)
     ch_bam      = BOWTIE2_ALIGN_CONTIGS.out.bam
@@ -52,6 +52,7 @@ workflow ASSEMBLY_ANNOTATION {
     emit:
     contigs  = ch_contigs   // [ meta, contigs.fa ] → Binning
     bam      = ch_bam       // [ meta, sorted.bam ] → MetaBAT2 depth
+    quast    = QUAST_ASSEMBLY.out.tsv   // [ meta, report.tsv ] → reporting
     proteins = ch_proteins  // [ meta, proteins.faa ] → fallback for Stage 7 if annotation skipped
     versions = ch_versions
 }

@@ -10,7 +10,11 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["input", "outdir", "pet_db"],
+            "required": [
+                "input",
+                "outdir",
+                "pet_db"
+            ],
             "properties": {
                 "input": {
                     "type": "string",
@@ -33,7 +37,9 @@
             "type": "object",
             "fa_icon": "fas fa-database",
             "description": "Paths to reference databases. Leave null to auto-download at runtime (except pet_db which is required).",
-            "required": ["pet_db"],
+            "required": [
+                "pet_db"
+            ],
             "properties": {
                 "pet_db": {
                     "type": "string",
@@ -119,8 +125,8 @@
                 },
                 "min_contig_len": {
                     "type": "integer",
-                    "description": "Minimum contig length (bp) to keep after assembly.",
-                    "default": 1000,
+                    "description": "Minimum contig length (bp) to keep after assembly. MetaBAT2 refuses anything below 1500.",
+                    "default": 1500,
                     "fa_icon": "fas fa-ruler"
                 },
                 "min_bin_size": {
@@ -163,7 +169,14 @@
                     "type": "string",
                     "default": "copy",
                     "description": "Method used to save pipeline results to output directory.",
-                    "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"],
+                    "enum": [
+                        "symlink",
+                        "rellink",
+                        "link",
+                        "copy",
+                        "copyNoFollow",
+                        "move"
+                    ],
                     "fa_icon": "fas fa-copy"
                 },
                 "email": {
@@ -181,14 +194,134 @@
                     "format": "file-path",
                     "description": "Custom config file to supply to MultiQC.",
                     "fa_icon": "fas fa-cog"
+                },
+                "email_on_fail": {
+                    "type": "string",
+                    "description": "Email address for completion summary, only on pipeline failure."
+                },
+                "multiqc_title": {
+                    "type": "string",
+                    "description": "Custom title printed in the MultiQC report."
+                },
+                "max_multiqc_email_size": {
+                    "type": "string",
+                    "default": "25.MB",
+                    "description": "Maximum size of the MultiQC report to email."
+                },
+                "tracedir": {
+                    "type": "string",
+                    "description": "Directory for pipeline execution reports.",
+                    "hidden": true
+                },
+                "assembler": {
+                    "type": "string",
+                    "default": "megahit",
+                    "enum": [
+                        "megahit"
+                    ],
+                    "description": "De novo assembler."
+                },
+                "checkm_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "CheckM database directory."
+                },
+                "skip_drep_checkm": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Run dRep without CheckM quality filtering."
+                }
+            }
+        },
+        "plastizyme_prediction": {
+            "title": "Plastizyme prediction",
+            "description": "Options for the MeTarEnz screening step (Stage 7).",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "properties": {
+                "metarenz_mode": {
+                    "type": "string",
+                    "default": "cs",
+                    "enum": [
+                        "cs",
+                        "ps"
+                    ],
+                    "description": "MeTarEnz screening mode: 'cs' screens nucleotide contigs with BLASTX, 'ps' screens proteins with BLASTP."
+                },
+                "metarenz_bitscore": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 0,
+                    "description": "Minimum bit-score for a candidate to be reported."
+                },
+                "skip_plastizyme": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip Stage 7 (plastizyme prediction)."
+                }
+            }
+        },
+        "structure_validation": {
+            "title": "Structure validation",
+            "description": "Options for conserved-domain search and 3D structure prediction (Stage 8).",
+            "type": "object",
+            "fa_icon": "fas fa-cube",
+            "properties": {
+                "petase_ref": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Reference PETase PDB for TM-Align. Downloads 6EQE when unset."
+                },
+                "cdd_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Pre-formatted NCBI CDD RPS-BLAST database. Downloaded when unset."
+                },
+                "cdd_db_set": {
+                    "type": "string",
+                    "default": "Cdd",
+                    "enum": [
+                        "Cdd",
+                        "Pfam"
+                    ],
+                    "description": "CDD subset to download: 'Cdd' (full, ~1.7 GB) or 'Pfam' (~410 MB)."
+                }
+            }
+        },
+        "max_job_request_options": {
+            "title": "Max Job Request Options",
+            "type": "object",
+            "properties": {
+                "max_cpus": {
+                    "type": "integer",
+                    "default": 16,
+                    "description": "Maximum CPUs for any single job."
+                },
+                "max_memory": {
+                    "type": "string",
+                    "default": "128.GB",
+                    "description": "Maximum memory for any single job."
+                },
+                "max_time": {
+                    "type": "string",
+                    "default": "240.h",
+                    "description": "Maximum time for any single job."
                 }
             }
         }
     },
     "allOf": [
-        { "$ref": "#/definitions/input_output_options" },
-        { "$ref": "#/definitions/databases" },
-        { "$ref": "#/definitions/pipeline_options" },
-        { "$ref": "#/definitions/generic_options" }
+        {
+            "$ref": "#/definitions/input_output_options"
+        },
+        {
+            "$ref": "#/definitions/databases"
+        },
+        {
+            "$ref": "#/definitions/pipeline_options"
+        },
+        {
+            "$ref": "#/definitions/generic_options"
+        }
     ]
 }

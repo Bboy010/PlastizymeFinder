@@ -1,0 +1,94 @@
+nextflow_process {
+
+    name "Test Process METARENZ"
+    script "../main.nf"
+    process "METARENZ"
+
+    tag "modules"
+    tag "modules_local"
+    tag "metarenz"
+
+    test("protein screening against PET_DB") {
+
+        when {
+            process {
+                """
+                // The curated PET_DB is screened against itself: every sequence
+                // is its own best hit, so this exercises the full path — BLAST,
+                // the results CSV and the candidate FASTA — with no external data.
+                input[0] = [
+                    [ id:'test' ],
+                    file("\${projectDir}/assets/testdata/pet_db_test.fasta", checkIfExists: true)
+                ]
+                input[1] = file("\${projectDir}/assets/testdata/pet_db_test.fasta", checkIfExists: true)
+                input[2] = 'ps'
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                // the screening table carries the protein sequence column for 'ps'
+                { assert path(process.out.csv.get(0).get(1)).readLines().first().contains('query_seq') },
+                // self-screening must recover candidates
+                { assert path(process.out.candidates.get(0).get(1)).readLines().findAll { it.startsWith('>') }.size() > 0 },
+                { assert snapshot(process.out.versions).match('versions') }
+            )
+        }
+    }
+
+    test("no candidate passes the bit-score filter") {
+
+        when {
+            params {
+                metarenz_bitscore = 100000
+            }
+            process {
+                """
+                input[0] = [
+                    [ id:'empty' ],
+                    file("\${projectDir}/assets/testdata/pet_db_test.fasta", checkIfExists: true)
+                ]
+                input[1] = file("\${projectDir}/assets/testdata/pet_db_test.fasta", checkIfExists: true)
+                input[2] = 'ps'
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                // MeTarEnz exits 0 and writes nothing when it finds nothing;
+                // the module must still honour its channel contract.
+                { assert process.success },
+                { assert path(process.out.csv.get(0).get(1)).readLines().size() == 1 },
+                { assert path(process.out.candidates.get(0).get(1)).readLines().size() == 0 }
+            )
+        }
+    }
+
+    test("contig screening - stub") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test' ],
+                    file("\${projectDir}/assets/testdata/pet_db_test.fasta", checkIfExists: true)
+                ]
+                input[1] = file("\${projectDir}/assets/testdata/pet_db_test.fasta", checkIfExists: true)
+                input[2] = 'cs'
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert path(process.out.csv.get(0).get(1)).readLines().first().contains('translation') }
+            )
+        }
+    }
+}

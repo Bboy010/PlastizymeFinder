@@ -63,4 +63,17 @@ process METABAT2 {
         metabat2: \$( metabat2 --help 2>&1 | head -1 | sed 's/.*version //' | sed 's/ .*//' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    mkdir -p bins
+    touch bins/${prefix}.fa
+    touch ${prefix}.unbinned.fa
+    touch ${prefix}.depth.txt
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        metabat2: "stub"
+    END_VERSIONS
+    """
 }

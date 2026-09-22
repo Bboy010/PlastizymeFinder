@@ -14,6 +14,7 @@ include { EGGNOG_DB_DOWNLOAD     } from '../../modules/local/db_download/eggnog_
 include { KOFAMSCAN_DB_DOWNLOAD  } from '../../modules/local/db_download/kofamscan_db/main'
 include { GTDBTK_DB_DOWNLOAD     } from '../../modules/local/db_download/gtdbtk_db/main'
 include { PETASE_REF_DOWNLOAD    } from '../../modules/local/db_download/petase_ref/main'
+include { CDD_DB_DOWNLOAD        } from '../../modules/local/db_download/cdd_db/main'
 
 workflow PREPARE_DATABASES {
 
@@ -101,6 +102,18 @@ workflow PREPARE_DATABASES {
         ch_versions   = ch_versions.mix(PETASE_REF_DOWNLOAD.out.versions)
     }
 
+    // -----------------------------------------------------------------------
+    // NCBI CDD — conserved-domain profiles for local RPS-BLAST (Stage 8)
+    // -----------------------------------------------------------------------
+    def ch_cdd_db
+    if (params.cdd_db) {
+        ch_cdd_db = channel.fromPath(params.cdd_db, type: 'dir', checkIfExists: true)
+    } else {
+        CDD_DB_DOWNLOAD(params.db_cache_dir, params.cdd_db_set)
+        ch_cdd_db   = CDD_DB_DOWNLOAD.out.db
+        ch_versions = ch_versions.mix(CDD_DB_DOWNLOAD.out.versions)
+    }
+
     emit:
     kraken2_db    = ch_kraken2_db
     metaphlan4_db = ch_metaphlan4_db
@@ -109,5 +122,6 @@ workflow PREPARE_DATABASES {
     kofamscan_db  = ch_kofamscan_db
     gtdbtk_db     = ch_gtdbtk_db
     petase_ref    = ch_petase_ref
+    cdd_db        = ch_cdd_db
     versions      = ch_versions
 }

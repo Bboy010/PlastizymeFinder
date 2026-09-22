@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# One run per branch: cancel the previous one on a new push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NXF_ANSI_LOG: false
+
+jobs:
+  lint:
+    name: Strict syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "26.04.6"
+
+      - name: nextflow lint
+        run: nextflow lint .
+
+  stub:
+    name: End-to-end run (stub)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "26.04.6"
+
+      # A stub run executes no tool: no container to pull, no database to
+      # download. That is what makes this job usable in CI.
+      - name: All 9 stages chain together
+        run: |
+          nextflow run . -profile test_all -stub-run \
+            --outdir results -w work
+
+      - name: Check every stage ran
+        run: |
+          TRACE=results/pipeline_info/execution_trace.txt
+          test -s "${TRACE}" || { echo "trace missing"; exit 1; }
+          for stage in QC_PREPROCESSING TAXONOMIC_PROFILING ASSEMBLY_ANNOTATION \
+                       BINNING BIN_QC BIN_CLASSIFICATION PLASTIZYME_PREDICTION \
+                       STRUCTURE_PREDICTION MULTIQC; do
+            grep -q "${stage}" "${TRACE}" || { echo "stage ${stage} did not run"; exit 1; }
+          done
+          echo "$(grep -c COMPLETED "${TRACE}") processes completed"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: execution-reports
+          path: results/pipeline_info/
+          retention-days: 7
+
+  modules:
+    name: Local module unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "26.04.6"
+
+      - uses: nf-core/setup-nf-test@v1
+        with:
+          version: "0.9.4"
+
+      # The MeTarEnz runtime image is the upstream one plus procps. It is not on
+      # a registry, so build it here from the committed recipe: that keeps the
+      # tests self-contained and checks the Dockerfile still builds. Docker finds
+      # the tag locally and never tries to pull it.
+      - name: Build the MeTarEnz runtime image
+        run: docker build -t plastizymefinder/metarenz:1.0 containers/metarenz
+
+      # TMALIGN and RPSBLAST pull public Biocontainers images. Everything runs
+      # against the test data shipped in the repository.
+      - name: nf-test
+        run: nf-test test modules/local --profile docker

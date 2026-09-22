@@ -39,5 +39,6 @@ workflow BIN_QC {
     emit:
     passed_bins = ch_hq_bins       // → BIN_CLASSIFICATION + PLASTIZYME_PREDICTION
     quast_stats = QUAST_BINS.out.results
+    drep_tables = DREP.out.results       // [ meta, drep_output/ ] → reporting
     versions    = ch_versions
 }

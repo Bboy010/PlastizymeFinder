@@ -26,7 +26,7 @@
 
 ## Introduction
 
-**PlastizymeFinder** is a bioinformatics pipeline built with [Nextflow DSL2](https://www.nextflow.io/) that identifies and characterizes plastic-degrading enzymes in metagenomic datasets. Starting from raw sequencing reads, the pipeline performs quality control, taxonomic profiling, metagenomic assembly, genome binning, functional annotation, and targeted plastizyme prediction using [MeTarENZ](https://github.com/Bboy010/MeTarENZ) against a curated PET_DB database. Candidate enzymes are then subjected to 3D structure prediction (AlphaFold2) and structural comparison to known PETase references (TM-Align).
+**PlastizymeFinder** is a bioinformatics pipeline built with [Nextflow DSL2](https://www.nextflow.io/) that identifies and characterizes plastic-degrading enzymes in metagenomic datasets. Starting from raw sequencing reads, the pipeline performs quality control, taxonomic profiling, metagenomic assembly, genome binning, functional annotation, and targeted plastizyme prediction using [MeTarEnz](https://github.com/mehdiforoozandeh/MeTarEnz) against a curated PET_DB database. Candidate enzymes are then subjected to 3D structure prediction (AlphaFold2) and structural comparison to known PETase references (TM-Align).
 
 The pipeline was developed as part of the **March 2026 nf-core Hackathon**.
 
@@ -80,7 +80,7 @@ Raw FASTQ reads
                       │  Stage 7    │
                       │  Plastizyme │
                       │  Prediction │
-                      │  MeTarENZ   │
+                      │  MeTarEnz   │
                       └──────┬──────┘
                       candidates
                       ┌──────▼──────────────────┐
@@ -308,11 +308,11 @@ results/
 │   ├── dbcan2/                     # CAZyme annotation
 │   └── kofamscan/                  # KEGG KO annotation
 ├── plastizyme_prediction/
-│   └── metatarenz/
+│   └── metarenz/
 │       ├── *_candidates.fasta      # Candidate plastizyme sequences
-│       └── *_metatarenz.tsv        # MeTarENZ hit table
+│       └── *.metarenz.csv          # MeTarEnz screening table
 ├── structure/
-│   ├── cdsearch/                   # Conserved domain annotations
+│   ├── cdsearch/                   # Conserved domain annotations (RPS-BLAST vs CDD)
 │   ├── alphafold2/                 # 3D structure predictions (.pdb)
 │   └── tmalign/
 │       └── *_tmalign_results.tsv   # TM-score & RMSD vs PETase reference
@@ -353,7 +353,7 @@ High-quality bins are annotated with **Prokka** (gene prediction). All proteins 
 - **KofamScan** — KEGG Orthology (KO) assignment
 
 ### Stage 7 — Plastizyme Prediction
-This is the core stage. HQ bins and unbinned/discarded contigs from MetaBAT2 are **concatenated per sample** into a single FASTA query. **MeTarENZ** performs targeted homology search against the **PET_DB** (curated plastic-degrading enzyme sequences). Candidate plastizyme sequences are extracted based on MeTarENZ hits.
+This is the core stage. HQ bins and unbinned/discarded contigs from MetaBAT2 are **concatenated per sample** into a single FASTA query. **MeTarEnz** performs targeted homology search against the **PET_DB** (curated plastic-degrading enzyme sequences). Candidate plastizyme sequences are extracted from the MeTarEnz screening table.
 
 ### Stage 8 — 3D Structure Prediction & Validation *(skippable)*
 Candidate sequences undergo:
@@ -388,7 +388,7 @@ Please also cite the tools used by the pipeline:
 - **eggNOG-mapper** — Cantalapiedra et al., *Molecular Biology and Evolution*, 2021
 - **dbCAN2** — Zhang et al., *Nucleic Acids Research*, 2018
 - **KofamScan** — Aramaki et al., *Bioinformatics*, 2020
-- **MeTarENZ** — Hongo et al., 2026
+- **MeTarEnz** — Foroozandeh Shahraki et al., *Natural Products and Bioprospecting*, 2024 — doi:10.1007/s13659-023-00426-8
 - **AlphaFold2** — Jumper et al., *Nature*, 2021
 - **TM-Align** — Zhang & Skolnick, *Nucleic Acids Research*, 2005
 - **MultiQC** — Ewels et al., *Bioinformatics*, 2016

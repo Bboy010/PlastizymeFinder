@@ -35,4 +35,13 @@ process METAPHLAN4_DB_DOWNLOAD {
         metaphlan: \$(metaphlan --version 2>&1 | sed 's/MetaPhlAn version //')
     END_VERSIONS
     """
+    stub:
+    """
+    mkdir -p metaphlan4_db
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        metaphlan4_db_download: "stub"
+    END_VERSIONS
+    """
 }

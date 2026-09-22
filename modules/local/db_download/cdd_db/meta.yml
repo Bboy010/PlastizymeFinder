@@ -1,0 +1,40 @@
+name: cdd_db_download
+description: Download the pre-formatted NCBI Conserved Domain Database for local RPS-BLAST
+keywords:
+  - CDD
+  - conserved domain
+  - database download
+tools:
+  - cdd:
+      description: |
+        NCBI distributes the Conserved Domain Database as pre-formatted
+        RPS-BLAST profile databases, so Batch CD-Search results can be
+        reproduced offline.
+      homepage: https://www.ncbi.nlm.nih.gov/Structure/cdd/cdd.shtml
+      doi: 10.1093/nar/gkz991
+      licence: ["US-Government-Work"]
+      identifier: ""
+input:
+  - - cache_dir:
+        type: string
+        description: Directory used as storeDir, so the database is downloaded once and reused
+  - - db_set:
+        type: string
+        description: |
+          Which pre-formatted set to fetch. 'Cdd' is the full database
+          (~1.7 GB, 62,456 models); 'Pfam' is the Pfam subset (~410 MB).
+        enum: ["Cdd", "Pfam"]
+output:
+  db:
+    - "cdd_db":
+        type: directory
+        description: Extracted RPS-BLAST database, with db_prefix.txt naming the database prefix
+  versions:
+    - "versions.yml":
+        type: file
+        description: File containing software versions
+        pattern: "versions.yml"
+authors:
+  - "@Bboy010"
+maintainers:
+  - "@Bboy010"

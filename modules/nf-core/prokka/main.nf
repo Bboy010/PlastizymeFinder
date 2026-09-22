@@ -73,4 +73,25 @@ process PROKKA {
         prokka: \$( prokka --version 2>&1 | sed 's/prokka //' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    touch ${prefix}.gff
+    touch ${prefix}.gbk
+    touch ${prefix}.fna
+    touch ${prefix}.faa
+    touch ${prefix}.ffn
+    touch ${prefix}.sqn
+    touch ${prefix}.fsa
+    touch ${prefix}.tbl
+    touch ${prefix}.err
+    touch ${prefix}.log
+    touch ${prefix}.txt
+    touch ${prefix}.tsv
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        prokka: "stub"
+    END_VERSIONS
+    """
 }

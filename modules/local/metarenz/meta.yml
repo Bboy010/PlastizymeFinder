@@ -1,0 +1,82 @@
+name: metarenz
+description: Targeted screening of metagenomic sequences against a curated enzyme database to identify candidate plastic-degrading enzymes
+keywords:
+  - plastizyme
+  - enzyme mining
+  - metagenomics
+  - PETase
+  - homology search
+tools:
+  - metarenz:
+      description: |
+        MeTarEnz (Metagenomic Targeted Enzyme Miner) screens high-throughput
+        metagenomic data against a user-defined enzyme database with a
+        configurable bit-score cut-off. It accepts raw reads, assembled
+        contigs or translated proteins.
+      homepage: https://github.com/mehdiforoozandeh/MeTarEnz
+      documentation: https://github.com/mehdiforoozandeh/MeTarEnz
+      doi: 10.1007/s13659-023-00426-8
+      licence: ["unknown"]
+      identifier: ""
+  - blast:
+      description: BLAST+ (blastp/blastx), bundled inside the MeTarEnz image and used for the homology search
+      homepage: https://blast.ncbi.nlm.nih.gov
+      licence: ["US-Government-Work"]
+      identifier: biotools:blast
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'sample1' ]
+    - sequences:
+        type: file
+        description: |
+          One or more FASTA files to screen, plain or gzipped. Nucleotide
+          contigs when mode is 'cs', protein sequences when mode is 'ps'.
+          Multiple files are concatenated into a single query.
+        pattern: "*.{fa,fasta,fna,faa,fa.gz,fasta.gz,fna.gz,faa.gz}"
+  - - pet_db:
+        type: file
+        description: Curated FASTA of reference plastic-degrading enzyme sequences (PET_DB)
+        pattern: "*.{fa,fasta}"
+  - - mode:
+        type: string
+        description: |
+          MeTarEnz screening mode. 'cs' (contig_screening) runs BLASTX on
+          nucleotide contigs and reports six-frame translations; 'ps'
+          (protein_screening) runs BLASTP on protein sequences.
+        enum: ["cs", "ps"]
+
+output:
+  csv:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.metarenz.csv":
+          type: file
+          description: |
+            MeTarEnz screening table. Columns: query_id, the protein sequence
+            (named 'translation' in 'cs' mode and 'query_seq' in 'ps' mode),
+            source_seq_id, bitscore, evalue. Header-only when no candidate
+            passes the bit-score filter.
+          pattern: "*.metarenz.csv"
+  candidates:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.candidates.faa":
+          type: file
+          description: Candidate plastizyme protein sequences, ready for structure prediction. Empty when there is no hit.
+          pattern: "*.candidates.faa"
+  versions:
+    - "versions.yml":
+        type: file
+        description: File containing software versions
+        pattern: "versions.yml"
+
+authors:
+  - "@Bboy010"
+maintainers:
+  - "@Bboy010"

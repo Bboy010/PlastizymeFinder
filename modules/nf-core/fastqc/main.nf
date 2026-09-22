@@ -20,7 +20,6 @@ process FASTQC {
 
     script:
     def args   = task.ext.args   ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
     def memory = Math.min(task.memory.toGiga() as int, 10)
     """
     fastqc \\
@@ -32,6 +31,17 @@ process FASTQC {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         fastqc: \$( fastqc --version | sed 's/FastQC v//' )
+    END_VERSIONS
+    """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    touch ${prefix}.html
+    touch ${prefix}.zip
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        fastqc: "stub"
     END_VERSIONS
     """
 }

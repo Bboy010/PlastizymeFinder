@@ -21,7 +21,6 @@ process DREP {
 
     script:
     def args      = task.ext.args   ?: ''
-    def prefix    = task.ext.prefix ?: "${meta.id}"
     def info_arg     = checkm_table ? "--genomeInfo ${checkm_table}" : '--ignoreGenomeQuality'
     def checkm_setup = params.checkm_db ? "checkm data setRoot ${params.checkm_db}" : ''
     """
@@ -37,6 +36,19 @@ process DREP {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         drep: \$( dRep -v 2>&1 | grep -oP '(?<=dRep )[0-9.]+' || echo 'unknown' )
+    END_VERSIONS
+    """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    mkdir -p drep_output/dereplicated_genomes
+    touch drep_output/dereplicated_genomes/${prefix}.fa
+    mkdir -p drep_output
+    touch drep_output/
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        drep: "stub"
     END_VERSIONS
     """
 }

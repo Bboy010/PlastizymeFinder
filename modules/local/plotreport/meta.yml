@@ -1,0 +1,63 @@
+name: plot_report
+description: Render the figure set from the raw reports the pipeline produced
+keywords:
+  - visualisation
+  - reporting
+  - taxonomy
+  - metagenomics
+tools:
+  - matplotlib:
+      description: Plotting library used to render the figures
+      homepage: https://matplotlib.org
+      doi: 10.1109/MCSE.2007.55
+      licence: ["PSF-2.0"]
+      identifier: ""
+input:
+  - - meta:
+        type: map
+        description: Groovy Map containing sample information, e.g. [ id:'sample1' ]
+    - kraken_report:
+        type: file
+        description: Kraken2 report. Optional — pass [] to skip the taxonomy figures.
+        pattern: "*report.txt"
+  - - metaphlan_profile:
+        type: file
+        description: MetaPhlAn4 profile. Optional.
+        pattern: "*_profile.txt"
+  - - quast_tsv:
+        type: file
+        description: QUAST assembly report. Optional.
+        pattern: "*.tsv"
+  - - drep_output:
+        type: directory
+        description: dRep output directory, for the bin similarity and quality figures. Optional.
+  - - fastp_json:
+        type: file
+        description: fastp JSON report, for the read QC figure. Optional.
+        pattern: "*.json"
+output:
+  figures:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "figures/*.png":
+          type: file
+          description: Rendered figures
+          pattern: "figures/*.png"
+  krona_text:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "figures/*.txt":
+          type: file
+          description: Krona-format text, ready for an ImportText step
+          pattern: "figures/*.txt"
+  versions:
+    - "versions.yml":
+        type: file
+        description: File containing software versions
+        pattern: "versions.yml"
+authors:
+  - "@Bboy010"
+maintainers:
+  - "@Bboy010"

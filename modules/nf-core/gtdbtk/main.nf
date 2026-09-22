@@ -22,7 +22,6 @@ process GTDBTK_CLASSIFYWF {
 
     script:
     def args   = task.ext.args   ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
     """
     export GTDBTK_DATA_PATH=\$(realpath $db)
 
@@ -36,6 +35,19 @@ process GTDBTK_CLASSIFYWF {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         gtdbtk: \$( gtdbtk --version | sed 's/gtdbtk: //' | sed 's/ (.*//' )
+    END_VERSIONS
+    """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    mkdir -p gtdbtk_output
+    touch gtdbtk_output/
+    touch gtdbtk_output/${prefix}.summary.tsv
+    touch gtdbtk_output/${prefix}.backbone.classify.tree
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        gtdbtk_classifywf: "stub"
     END_VERSIONS
     """
 }

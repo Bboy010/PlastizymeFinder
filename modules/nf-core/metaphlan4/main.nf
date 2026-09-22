@@ -41,4 +41,15 @@ process METAPHLAN4 {
         metaphlan: \$( metaphlan --version 2>&1 | sed 's/MetaPhlAn version //' )
     END_VERSIONS
     """
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    touch ${prefix}_profile.txt
+    printf "" | bzip2 > ${prefix}_bowtie2out.bz2
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        metaphlan4: "stub"
+    END_VERSIONS
+    """
 }
