@@ -30,6 +30,15 @@ process METAPHLAN4_DB_DOWNLOAD {
     """
     metaphlan --install --bowtie2db metaphlan4_db
 
+    # storeDir keeps whatever this task leaves behind, and a later run treats it
+    # as a finished database. Refuse to hand over an empty or truncated one.
+    tiny=\$(find metaphlan4_db -type f -size -1k 2>/dev/null | head -5)
+    if [ -n "\$tiny" ]; then
+        echo "ERROR: MetaPhlAn download incomplete - suspiciously small files:" >&2
+        echo "\$tiny" >&2
+        exit 1
+    fi
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         metaphlan: \$(metaphlan --version 2>&1 | sed 's/MetaPhlAn version //')

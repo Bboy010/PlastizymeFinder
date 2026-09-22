@@ -90,6 +90,13 @@
                     "description": "Directory where databases will be downloaded if not provided.",
                     "default": "${projectDir}/databases",
                     "fa_icon": "fas fa-folder"
+                },
+                "kraken2_db_url": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "URL of a pre-built Kraken2 index, fetched when kraken2_db is not set.",
+                    "default": "https://genome-idx.s3.amazonaws.com/kraken/k2_standard_08gb_20250402.tar.gz",
+                    "fa_icon": "fas fa-download"
                 }
             }
         },
