@@ -47,6 +47,12 @@ process COLABFOLD {
     def relax  = task.ext.use_gpu ? '--amber --use-gpu-relax' : ''
     def data   = weights ? "--data ${weights}" : ''
     """
+    # Docker runs this container as the host's numeric UID (docker.runOptions
+    # -u \$(id -u):\$(id -g)), which has no /etc/passwd entry, so HOME resolves
+    # to '/' and colabfold's weight download fails with "Permission denied:
+    # '/.cache'". Give it a HOME it can write to.
+    export HOME="\$PWD"
+
     # An empty candidate FASTA is a legitimate outcome upstream, not an error.
     if [ ! -s ${fasta} ]; then
         echo "WARN: ${fasta} is empty - nothing to fold for ${prefix}, no structure emitted" >&2

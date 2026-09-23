@@ -1,6 +1,8 @@
 # Nextflow output directories
 work/
 results/
+work_*/
+results_*/
 
 # Nextflow working directory
 .nextflow/
