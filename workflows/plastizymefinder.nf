@@ -24,6 +24,7 @@ include { STRUCTURE_PREDICTION   } from '../workflows/subworkflows/structure_pre
 // -----------------------------------------------------------------------
 include { MULTIQC     } from '../modules/nf-core/multiqc/main'
 include { PLOT_REPORT } from '../modules/local/plotreport/main'
+include { METARENZ    } from '../modules/local/metarenz/main'
 
 // -----------------------------------------------------------------------
 // HELPER FUNCTIONS
@@ -51,6 +52,54 @@ def validate_samplesheet(LinkedHashMap row) {
 // -----------------------------------------------------------------------
 
 workflow PLASTIZYMEFINDER {
+
+    // -----------------------------------------------------------------------
+    // Standalone entry point: screen a FASTA the caller already has, instead
+    // of raw reads. Skips stages 1-6 entirely - no assembly, no binning, no
+    // taxonomy - and goes straight to plastizyme screening (stage 7) and,
+    // unless --skip_structure, structure prediction (stage 8). This is the
+    // path for candidate sequences obtained some other way: a published
+    // protein catalogue, someone else's assembly, sequences from a different
+    // pipeline entirely.
+    // -----------------------------------------------------------------------
+    if (params.candidates_fasta) {
+        // Stages 2 and 6 have nothing to run on here (no reads, no bins) -
+        // force them off so PREPARE_DATABASES doesn't fetch Kraken2, MetaPhlAn4,
+        // dbCAN, eggNOG, KofamScan or GTDB-Tk for a run that will never use them.
+        params.skip_taxonomy    = true
+        params.skip_annotation  = true
+        params.skip_drep_checkm = true
+
+        def ch_versions = channel.empty()
+        def ch_pet_db   = channel.fromPath(params.pet_db, checkIfExists: true)
+
+        def meta = [id: file(params.candidates_fasta).simpleName]
+        def ch_query = channel.of([meta, [file(params.candidates_fasta, checkIfExists: true)]])
+
+        METARENZ(ch_query, ch_pet_db, params.metarenz_mode)
+        ch_versions = ch_versions.mix(METARENZ.out.versions)
+
+        if (!params.skip_structure) {
+            // Same databases stage 8 always uses; petase_ref and cdd_db have
+            // their own auto-download so no other database is needed here.
+            PREPARE_DATABASES()
+            ch_versions = ch_versions.mix(PREPARE_DATABASES.out.versions)
+
+            STRUCTURE_PREDICTION(
+                METARENZ.out.candidates,
+                PREPARE_DATABASES.out.petase_ref,
+                PREPARE_DATABASES.out.cdd_db,
+                params.colabfold_weights ? channel.fromPath(params.colabfold_weights, checkIfExists: true) : []
+            )
+            ch_versions = ch_versions.mix(STRUCTURE_PREDICTION.out.versions)
+        }
+
+        ch_versions
+            .unique()
+            .collectFile(name: 'software_versions.yml', sort: true, storeDir: "${params.outdir}/pipeline_info")
+
+        return
+    }
 
     def ch_versions = channel.empty()
 

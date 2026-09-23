@@ -15,6 +15,7 @@
 - [Pipeline overview](#pipeline-overview)
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
+- [Screening sequences you already have](#screening-sequences-you-already-have)
 - [Input](#input)
 - [Databases](#databases)
 - [Parameters](#parameters)
@@ -26,7 +27,11 @@
 
 ## Introduction
 
-**PlastizymeFinder** is a bioinformatics pipeline built with [Nextflow DSL2](https://www.nextflow.io/) that identifies and characterizes plastic-degrading enzymes in metagenomic datasets. Starting from raw sequencing reads, the pipeline performs quality control, taxonomic profiling, metagenomic assembly, genome binning, functional annotation, and targeted plastizyme prediction using [MeTarEnz](https://github.com/mehdiforoozandeh/MeTarEnz) against a curated PET_DB database. Candidate enzymes are then subjected to 3D structure prediction (AlphaFold2) and structural comparison to known PETase references (TM-Align).
+**PlastizymeFinder** is a bioinformatics pipeline built with [Nextflow DSL2](https://www.nextflow.io/) that identifies and characterizes plastic-degrading enzymes in metagenomic datasets. Starting from raw sequencing reads, the pipeline performs quality control, taxonomic profiling, metagenomic assembly, genome binning, functional annotation, and targeted plastizyme prediction using [MeTarEnz](https://github.com/mehdiforoozandeh/MeTarEnz) against a curated PET_DB database. Candidate enzymes are then subjected to 3D structure prediction ([ColabFold](https://github.com/sokrypton/ColabFold)) and structural comparison to known PETase references (TM-Align).
+
+If you already have candidate sequences (from your own assembly, a published catalogue, or any other source), you can skip straight to plastizyme screening and structure prediction with `--candidates_fasta` — see [Screening sequences you already have](#screening-sequences-you-already-have).
+
+Validated end to end on real, unsubsampled metagenomic reads: starting from raw FASTQ, with no manual intervention, the pipeline recovers a published PET hydrolase (TM-score 0.923 / RMSD 1.45 Å against the reference structure, matching the published 0.922 / 1.40 Å).
 
 The pipeline was developed as part of the **March 2026 nf-core Hackathon**.
 
@@ -86,7 +91,7 @@ Raw FASTQ reads
                       ┌──────▼──────────────────┐
                       │  Stage 8                │
                       │  Structure Prediction   │
-                      │  CD-Search ║ AlphaFold2 │  (parallel)
+                      │  CD-Search ║ ColabFold  │  (parallel)
                       │  → TM-Align vs PETase   │
                       └─────────────────────────┘
                              │
@@ -148,7 +153,9 @@ nextflow run Bboy010/PlastizymeFinder \
     --outdir results
 ```
 
-**With pre-downloaded databases** (recommended for large runs):
+**With pre-downloaded databases** (recommended for large runs — every
+database below can point at one already on your machine, see
+[`docs/local_databases.md`](docs/local_databases.md)):
 
 ```bash
 nextflow run Bboy010/PlastizymeFinder \
@@ -158,6 +165,7 @@ nextflow run Bboy010/PlastizymeFinder \
     --kraken2_db /path/to/kraken2_db/ \
     --metaphlan4_db /path/to/metaphlan4_db/ \
     --gtdbtk_db /path/to/gtdbtk_db/ \
+    --checkm_db /path/to/checkm2_uniref100.dmnd \
     --eggnog_db /path/to/eggnog_db/ \
     --dbcan2_db /path/to/dbcan2_db/ \
     --kofamscan_db /path/to/kofamscan_db/ \
@@ -182,6 +190,35 @@ nextflow run Bboy010/PlastizymeFinder \
     -profile test,docker \
     --outdir results_test
 ```
+
+---
+
+## Screening sequences you already have
+
+If you already have candidate sequences — from your own assembly, a published
+catalogue, or a completely different pipeline — you don't need to feed raw
+reads back through stages 1–6 to screen them. `--candidates_fasta` replaces
+`--input` entirely and goes straight to plastizyme screening (Stage 7) and,
+unless `--skip_structure` is set, structure prediction (Stage 8):
+
+```bash
+nextflow run Bboy010/PlastizymeFinder \
+    -profile docker \
+    --candidates_fasta my_sequences.fasta \
+    --pet_db /path/to/pet_db.fasta \
+    --metarenz_mode ps \
+    --outdir results
+```
+
+Use `--metarenz_mode ps` for protein sequences (the common case here) or the
+default `cs` for nucleotide contigs — see [Stage 7](#stage-7--plastizyme-prediction).
+As with the normal entry point, `--pet_db` can be the project's own database
+(see [Databases](#databases)) or one you built yourself.
+
+`--input` and `--candidates_fasta` are two different entry points: provide one,
+not both. Stages 1, 2, 3, 4, 5 and 6 do not run in this mode — there are no
+reads to process and no bins to classify — so their outputs (assembly,
+taxonomy, annotation, MultiQC) will not appear in `results/`.
 
 ---
 
@@ -213,13 +250,18 @@ COMPOST_C,/data/compost_c.fastq.gz,
 | Database     | Parameter        | Auto-download | Size   | Source                                                                 |
 |--------------|-----------------|---------------|--------|------------------------------------------------------------------------|
 | PET_DB       | `--pet_db`       | No (**required**) | ~10 MB | [GitHub Releases](https://github.com/Bboy010/PlastizymeFinder/releases) |
-| Kraken2      | `--kraken2_db`   | Yes           | ~70 GB | Built via `kraken2-build`                                              |
-| MetaPhlAn4   | `--metaphlan4_db`| Yes           | ~3 GB  | Downloaded via `metaphlan --install`                                   |
-| GTDB-tk      | `--gtdbtk_db`    | Yes           | ~70 GB | [data.gtdb.ecogenomic.org](https://data.gtdb.ecogenomic.org)           |
+| Kraken2      | `--kraken2_db`   | Yes           | ~5.5 GB | Pre-built capped standard index ([`--kraken2_db_url`](https://genome-idx.s3.amazonaws.com/kraken/) to pick a different one) |
+| MetaPhlAn4   | `--metaphlan4_db`| Yes           | ~35 GB | Downloaded via `metaphlan --install`                                   |
+| GTDB-tk      | `--gtdbtk_db`    | Yes           | ~57 GB | [data.gtdb.ecogenomic.org](https://data.gtdb.ecogenomic.org)           |
+| CheckM2      | `--checkm_db`    | Yes           | ~3 GB  | Downloaded via `checkm2 database --download`                          |
 | eggNOG       | `--eggnog_db`    | Yes           | ~50 GB | Downloaded via `download_eggnog_data.py`                               |
-| dbCAN2       | `--dbcan2_db`    | Yes           | ~1 GB  | [pro.unl.edu/dbCAN2](https://pro.unl.edu/dbCAN2/download/Databases/V12/) |
-| KofamScan    | `--kofamscan_db` | Yes           | ~30 GB | [ftp.genome.jp/pub/db/kofam](ftp://ftp.genome.jp/pub/db/kofam/)        |
+| dbCAN2       | `--dbcan2_db`    | Yes           | ~1 GB  | [pro.unl.edu/dbCAN2](https://pro.unl.edu/dbCAN2/download/Databases/V12/) — needs dbCAN 3.x, see [`docs/local_databases.md`](docs/local_databases.md) |
+| KofamScan    | `--kofamscan_db` | Yes           | ~1.5 GB | [genome.jp/ftp/db/kofam](https://www.genome.jp/ftp/db/kofam/)        |
 | PETase ref   | `--petase_ref`   | Yes (6EQE)    | <1 MB  | [RCSB PDB 6EQE](https://www.rcsb.org/structure/6EQE)                  |
+| CDD          | `--cdd_db`       | Yes           | ~410 MB (Pfam) – ~1.7 GB (full) | [NCBI CDD](https://ftp.ncbi.nlm.nih.gov/pub/mmdb/cdd) — set with `--cdd_db_set` |
+
+Every database above can also point at one already on your machine — see
+[Using databases already on your machine](#quick-start).
 
 > **Note on PET_DB:** The PET_DB is built by manually curating sequences from PAZy, NCBI, BRENDA, and UniProt. It cannot be auto-generated because it requires expert domain knowledge. A pre-built version is provided with each pipeline release. To build your own, follow [`docs/pet_db_guide.md`](docs/pet_db_guide.md).
 
@@ -231,23 +273,28 @@ COMPOST_C,/data/compost_c.fastq.gz,
 
 ### Input / Output
 
-| Parameter         | Default    | Description                                   |
-|-------------------|------------|-----------------------------------------------|
-| `--input`         | (required) | Path to input samplesheet CSV                 |
-| `--outdir`        | `results`  | Output directory                              |
-| `--pet_db`        | (required) | Path to PET_DB FASTA                         |
+| Parameter            | Default    | Description                                   |
+|----------------------|------------|-----------------------------------------------|
+| `--input`            | (required, unless `--candidates_fasta`) | Path to input samplesheet CSV |
+| `--candidates_fasta` | null       | Screen a FASTA you already have — replaces `--input`, see [above](#screening-sequences-you-already-have) |
+| `--outdir`           | `results`  | Output directory                              |
+| `--pet_db`           | (required) | Path to PET_DB FASTA                         |
 
 ### Databases
 
 | Parameter          | Default | Description                                           |
 |--------------------|---------|-------------------------------------------------------|
 | `--kraken2_db`     | null    | Kraken2 DB directory. Auto-downloaded if not provided |
+| `--kraken2_db_url` | pre-built 8 GB standard index | URL of the Kraken2 index fetched when `--kraken2_db` is null |
 | `--metaphlan4_db`  | null    | MetaPhlAn4 DB directory. Auto-downloaded if not provided |
 | `--gtdbtk_db`      | null    | GTDB-tk reference directory. Auto-downloaded if not provided |
+| `--checkm_db`      | null    | CheckM2 DIAMOND database (`.dmnd` file, or a directory containing one). Auto-downloaded if not provided |
 | `--eggnog_db`      | null    | eggNOG DB directory. Auto-downloaded if not provided  |
 | `--dbcan2_db`      | null    | dbCAN2 DB directory. Auto-downloaded if not provided  |
 | `--kofamscan_db`   | null    | KofamScan profiles directory. Auto-downloaded if not provided |
 | `--petase_ref`     | null    | PETase reference PDB. Downloads 6EQE from RCSB if not provided |
+| `--cdd_db`         | null    | CDD profiles directory for RPS-BLAST. Auto-downloaded if not provided |
+| `--cdd_db_set`     | `Cdd`   | Which CDD set to fetch: `Cdd` (full, ~1.7 GB) or `Pfam` (subset, ~410 MB) |
 | `--db_cache_dir`   | `./databases` | Directory for auto-downloaded databases         |
 
 ### Reference
@@ -262,7 +309,7 @@ COMPOST_C,/data/compost_c.fastq.gz,
 |---------------------|---------|--------------------------------------------------------|
 | `--skip_taxonomy`   | false   | Skip Stage 2 (Kraken2 + MetaPhlAn4)                   |
 | `--skip_annotation` | false   | Skip Stage 6 (eggNOG, dbCAN2, kofamscan)               |
-| `--skip_structure`  | false   | Skip Stage 8 (AlphaFold2 + TM-Align)                  |
+| `--skip_structure`  | false   | Skip Stage 8 (ColabFold + TM-Align)                   |
 | `--min_contig_len`  | 1000    | Minimum contig length (bp) after assembly              |
 | `--min_bin_size`    | 200000  | Minimum bin size (bp) for MetaBAT2                     |
 | `--min_completeness`| 50      | Minimum bin completeness (%) for dRep filtering        |
@@ -313,9 +360,9 @@ results/
 │       └── *.metarenz.csv          # MeTarEnz screening table
 ├── structure/
 │   ├── cdsearch/                   # Conserved domain annotations (RPS-BLAST vs CDD)
-│   ├── alphafold2/                 # 3D structure predictions (.pdb)
+│   ├── colabfold/                  # 3D structure predictions (.pdb) + per-model pLDDT
 │   └── tmalign/
-│       └── *_tmalign_results.tsv   # TM-score & RMSD vs PETase reference
+│       └── *.tmalign.tsv           # TM-score & RMSD vs PETase reference
 ├── multiqc/
 │   └── multiqc_report.html         # Aggregated QC report
 └── pipeline_info/
@@ -357,8 +404,8 @@ This is the core stage. HQ bins and unbinned/discarded contigs from MetaBAT2 are
 
 ### Stage 8 — 3D Structure Prediction & Validation *(skippable)*
 Candidate sequences undergo:
-1. **CD-Search** (NCBI REST API) — conserved domain annotation to identify PETase-like motifs
-2. **AlphaFold2** — 3D structure prediction (GPU recommended)
+1. **RPS-BLAST vs CDD** — conserved domain annotation, run locally against pre-formatted NCBI CDD profiles (the offline equivalent of Batch CD-Search)
+2. **ColabFold** — 3D structure prediction. It takes its MSA from a public MMseqs2 server rather than local reference databases, so no multi-hundred-GB AlphaFold2 database is needed; a GPU speeds it up but is not required (CPU folding of a single sequence took several hours in testing)
 3. **TM-Align** — structural similarity comparison against the PETase reference (default: 6EQE, *Ideonella sakaiensis* IsPETase)
 
 ---
@@ -389,7 +436,9 @@ Please also cite the tools used by the pipeline:
 - **dbCAN2** — Zhang et al., *Nucleic Acids Research*, 2018
 - **KofamScan** — Aramaki et al., *Bioinformatics*, 2020
 - **MeTarEnz** — Foroozandeh Shahraki et al., *Natural Products and Bioprospecting*, 2024 — doi:10.1007/s13659-023-00426-8
-- **AlphaFold2** — Jumper et al., *Nature*, 2021
+- **ColabFold** — Mirdita et al., *Nature Methods*, 2022
+- **AlphaFold2** — Jumper et al., *Nature*, 2021 (the structure prediction model ColabFold runs)
+- **CheckM2** — Chklovski et al., *Nature Methods*, 2023
 - **TM-Align** — Zhang & Skolnick, *Nucleic Acids Research*, 2005
 - **MultiQC** — Ewels et al., *Bioinformatics*, 2016
 

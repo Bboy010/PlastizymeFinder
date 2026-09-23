@@ -40,8 +40,16 @@ workflow {
     }
 
     // Validate mandatory parameters
-    if (!params.input) {
-        error "ERROR: Please provide an input samplesheet with --input <samplesheet.csv>"
+    if (!params.input && !params.candidates_fasta) {
+        error "ERROR: Please provide either --input <samplesheet.csv> (reads) or --candidates_fasta <sequences.fasta> (a FASTA you already have)"
+    }
+
+    if (params.input && params.candidates_fasta) {
+        error "ERROR: --input and --candidates_fasta are two different entry points - provide one, not both"
+    }
+
+    if (params.candidates_fasta && !file(params.candidates_fasta).exists()) {
+        error "ERROR: --candidates_fasta file does not exist: ${params.candidates_fasta}"
     }
 
     if (!(params.metarenz_mode in ['cs', 'ps'])) {

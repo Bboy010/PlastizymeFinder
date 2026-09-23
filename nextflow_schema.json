@@ -20,8 +20,15 @@
                     "type": "string",
                     "format": "file-path",
                     "description": "Path to comma-separated samplesheet file containing information about samples.",
-                    "help_text": "You will need to create a samplesheet with information about the samples you want to analyse before running the pipeline. Use this parameter to specify its location.",
+                    "help_text": "You will need to create a samplesheet with information about the samples you want to analyse before running the pipeline. Use this parameter to specify its location. Not needed if --candidates_fasta is set instead.",
                     "fa_icon": "fas fa-file-csv"
+                },
+                "candidates_fasta": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Screen a protein or contig FASTA you already have, skipping raw-read processing (stages 1-6) entirely. Replaces --input.",
+                    "help_text": "For sequences you already obtained some other way (your own assembly, an existing catalogue, etc.) and want screened for plastic-degrading activity and, unless --skip_structure is set, folded and compared to a reference structure. Still requires --pet_db. Use --metarenz_mode ps for protein sequences (the common case here), or leave the default 'cs' for nucleotide contigs.",
+                    "fa_icon": "fas fa-dna"
                 },
                 "outdir": {
                     "type": "string",
