@@ -9,9 +9,10 @@
 # MeTarEnz is untouched. The base is Debian 10 (buster), which is end-of-life,
 # so its packages are pulled from archive.debian.org.
 #
-# Build and publish:
-#   docker build -t <registry>/plastizymefinder-metarenz:1.0 containers/metarenz
-#   docker push  <registry>/plastizymefinder-metarenz:1.0
+# Published to GitHub Container Registry by .github/workflows/publish-image.yml
+# on every push to main. To build and push by hand:
+#   docker build -t ghcr.io/bboy010/plastizymefinder-metarenz:1.0 containers/metarenz
+#   docker push  ghcr.io/bboy010/plastizymefinder-metarenz:1.0
 #
 # Upstream tool : https://github.com/mehdiforoozandeh/MeTarEnz
 # Upstream image: https://hub.docker.com/r/mforooz/metarenz

@@ -240,8 +240,13 @@ def fig_bin_scatter(geninfo_path, outdir):
     lengths, n50s, names = [], [], []
     with open(geninfo_path) as fh:
         for row in csv.DictReader(fh):
-            lengths.append(int(row["length"]))
-            n50s.append(int(row["N50"]))
+            # dRep leaves length/N50 blank when it derives quality from a
+            # supplied --genomeInfo table (e.g. CheckM2) rather than computing
+            # them itself; skip such rows rather than crashing the report.
+            if not row.get("length") or not row.get("N50"):
+                continue
+            lengths.append(int(float(row["length"])))
+            n50s.append(int(float(row["N50"])))
             names.append(row["genome"].replace(".fa", ""))
     if not lengths:
         return None

@@ -4,7 +4,7 @@
 
     RPS-BLAST vs CDD (conserved domains)  ─┐
                                            ├─ both read the same candidate FASTA
-    AlphaFold2 (3D prediction) ────────────┘
+    ColabFold (3D prediction) ─────────────┘
         └─ TM-Align vs the reference PETase (default 6EQE)
 
     RPS-BLAST against the pre-formatted CDD profiles is the local, offline
@@ -16,7 +16,7 @@
 nextflow.enable.dsl = 2
 
 include { RPSBLAST   } from '../../modules/local/rpsblast/main'
-include { ALPHAFOLD2 } from '../../modules/local/alphafold2/main'
+include { COLABFOLD } from '../../modules/local/colabfold/main'
 include { TMALIGN    } from '../../modules/local/tmalign/main'
 
 workflow STRUCTURE_PREDICTION {
@@ -25,6 +25,8 @@ workflow STRUCTURE_PREDICTION {
     candidates  // channel: [ meta, candidates.faa ] from PLASTIZYME_PREDICTION
     petase_ref  // channel: path — reference PDB for TM-Align (default 6EQE)
     cdd_db      // channel: path — pre-formatted CDD RPS-BLAST database directory
+    weights     // channel: path — ColabFold AlphaFold2 weights, or [] to let
+                //                 colabfold_batch fetch them on first use
 
     main:
     def ch_versions = channel.empty()
@@ -33,16 +35,19 @@ workflow STRUCTURE_PREDICTION {
     RPSBLAST(candidates, cdd_db)
     ch_versions = ch_versions.mix(RPSBLAST.out.versions.first())
 
-    // 8b. 3D structure prediction on the same candidate FASTA
-    ALPHAFOLD2(candidates)
-    ch_versions = ch_versions.mix(ALPHAFOLD2.out.versions.first())
+    // 8b. 3D structure prediction on the same candidate FASTA. ColabFold takes
+    //     its MSA from an MMseqs2 server, so no local sequence database is
+    //     needed - this is what makes stage 8 runnable on an ordinary machine.
+    COLABFOLD(candidates, weights)
+    ch_versions = ch_versions.mix(COLABFOLD.out.versions.first())
 
     // 8c. Structural similarity of every predicted model vs the PETase reference
-    TMALIGN(ALPHAFOLD2.out.pdb, petase_ref)
+    TMALIGN(COLABFOLD.out.pdb, petase_ref)
     ch_versions = ch_versions.mix(TMALIGN.out.versions.first())
 
     emit:
-    pdb_structures = ALPHAFOLD2.out.pdb   // predicted 3D structures (.pdb)
+    pdb_structures = COLABFOLD.out.pdb    // predicted 3D structures (.pdb)
+    plddt          = COLABFOLD.out.plddt  // per-model confidence
     domain_hits    = RPSBLAST.out.hits    // conserved-domain annotations (.tsv)
     tmalign_scores = TMALIGN.out.results  // TM-score, RMSD vs the PETase reference
     versions       = ch_versions

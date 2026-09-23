@@ -29,11 +29,20 @@ process KOFAMSCAN_DB_DOWNLOAD {
     script:
     """
     mkdir -p kofamscan_db
-    wget -q ftp://ftp.genome.jp/pub/db/kofam/ko_list.gz        -O kofamscan_db/ko_list.gz
-    wget -q ftp://ftp.genome.jp/pub/db/kofam/profiles.tar.gz   -O kofamscan_db/profiles.tar.gz
+    wget -q https://www.genome.jp/ftp/db/kofam/ko_list.gz        -O kofamscan_db/ko_list.gz
+    wget -q https://www.genome.jp/ftp/db/kofam/profiles.tar.gz   -O kofamscan_db/profiles.tar.gz
     gunzip  kofamscan_db/ko_list.gz
     tar -xzf kofamscan_db/profiles.tar.gz -C kofamscan_db/
     rm kofamscan_db/profiles.tar.gz
+
+    # storeDir keeps whatever this task leaves behind, and a later run treats it
+    # as a finished database. Refuse to hand over an empty or truncated one.
+    tiny=\$(find kofamscan_db -type f -size -1k 2>/dev/null | head -5)
+    if [ -n "\$tiny" ]; then
+        echo "ERROR: KofamScan download incomplete - suspiciously small files:" >&2
+        echo "\$tiny" >&2
+        exit 1
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

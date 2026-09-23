@@ -2,13 +2,14 @@ process DBCAN2 {
     tag "$meta.id"
     label 'process_high'
 
-    // The package was renamed run-dbcan -> dbcan, and 4.1.4 exists neither on
-    // bioconda nor as an image (quay.io only publishes run-dbcan 2.0.11).
-    // v5 changed the CLI - see the script block.
-    conda 'bioconda::dbcan=5.2.9'
+    // Pinned to dbCAN 3, the last line that reads a plain HMMdb + DIAMOND
+    // directory. Verified against image 3.0.7: 4.x and 5.x abort with
+    // "No dbCAN_sub HMM database found" whatever --tools is set to, so they
+    // cannot annotate against a database that has no dbCAN_sub.hmm.
+    conda 'bioconda::dbcan=3.0.7'
     container "${workflow.containerEngine in ['singularity', 'apptainer']
-        ? 'https://depot.galaxyproject.org/singularity/dbcan:5.2.9--pyhdfd78af_0'
-        : 'quay.io/biocontainers/dbcan:5.2.9--pyhdfd78af_0'}"
+        ? 'https://depot.galaxyproject.org/singularity/dbcan:3.0.7--pyh5e36f6f_0'
+        : 'quay.io/biocontainers/dbcan:3.0.7--pyh5e36f6f_0'}"
 
     input:
     tuple val(meta), path(fasta)
@@ -26,26 +27,38 @@ process DBCAN2 {
     script:
     def args   = task.ext.args   ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // run_dbcan passes the query to HMMER and DIAMOND, neither of which reads
+    // a compressed file.
+    def decompress = fasta.name.endsWith('.gz')
+        ? "gzip -cd ${fasta} > query.faa"
+        : "ln -s ${fasta} query.faa"
     """
-    # dbCAN 5 works through subcommands. Options verified against image 5.2.9:
-    #   run_dbcan CAZyme_annotation --mode --input_raw_data --output_dir --db_dir --threads
-    run_dbcan CAZyme_annotation \\
-        --mode protein \\
-        --input_raw_data $fasta \\
-        --output_dir ${prefix}_dbcan \\
-        --db_dir $db \\
-        --threads $task.cpus \\
+    $decompress
+
+    # The HMMdb carries its release in the filename (V8, V12, ...), so find it
+    # rather than hard-coding a version the database may not be.
+    hmmdb=\$(cd $db && ls dbCAN-HMMdb-*.txt 2>/dev/null | head -1)
+    if [ -z "\$hmmdb" ]; then
+        echo "ERROR: no dbCAN-HMMdb-*.txt in $db" >&2
+        exit 1
+    fi
+
+    run_dbcan query.faa protein \
+        --db_dir $db \
+        --dbCANFile "\$hmmdb" \
+        --tools hmmer diamond \
+        --out_dir ${prefix}_dbcan \
+        --dia_cpu $task.cpus \
+        --hmm_cpu $task.cpus \
         $args
 
-    # Output file names changed between v4 and v5, so match on a pattern rather
-    # than hard-coding a name.
-    cp "\$(ls ${prefix}_dbcan/*overview* | head -1)" ${prefix}.overview.txt
-    cp "\$(ls ${prefix}_dbcan/*hmmer*   2>/dev/null | head -1)" ${prefix}.hmmer.out   2>/dev/null || true
-    cp "\$(ls ${prefix}_dbcan/*diamond* 2>/dev/null | head -1)" ${prefix}.diamond.out 2>/dev/null || true
+    cp ${prefix}_dbcan/overview.txt ${prefix}.overview.txt
+    cp ${prefix}_dbcan/hmmer.out    ${prefix}.hmmer.out   2>/dev/null || true
+    cp ${prefix}_dbcan/diamond.out  ${prefix}.diamond.out 2>/dev/null || true
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        dbcan: \$( run_dbcan --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "5.2.9" )
+        dbcan: \$( run_dbcan --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo '3.0.7' )
     END_VERSIONS
     """
     stub:

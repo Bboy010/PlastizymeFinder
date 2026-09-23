@@ -1,0 +1,63 @@
+name: checkm2
+description: Estimates genome bin completeness and contamination with CheckM2's machine-learning models
+keywords:
+  - completeness
+  - contamination
+  - genome quality
+  - MAG
+  - bin QC
+tools:
+  - checkm2:
+      description: |
+        CheckM2 predicts genome completeness and contamination with
+        pre-trained machine-learning models, without needing a lineage-specific
+        marker set. Output is reshaped here into dRep's --genomeInfo format
+        (genome,completeness,contamination) so a study's quality thresholds
+        can be enforced during dereplication.
+      homepage: https://github.com/chklovski/CheckM2
+      documentation: https://github.com/chklovski/CheckM2
+      doi: 10.1038/s41592-023-01940-w
+      licence: ["MIT"]
+      identifier: biotools:checkm2
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'sample1' ]
+    - bins:
+        type: file
+        description: Genome bins to evaluate (one FASTA per bin)
+  - - db:
+        type: file
+        description: |
+          The CheckM2 DIAMOND database (.dmnd file), or a directory that
+          contains one (searched recursively — the Zenodo-published database
+          nests it one level down).
+
+output:
+  - genome_info:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'sample1' ]
+      - "*.genome_info.csv":
+          type: file
+          description: |
+            completeness/contamination table in dRep's --genomeInfo format
+            (genome,completeness,contamination), ready to pass straight through.
+  - report:
+      - "*.quality_report.tsv":
+          type: file
+          description: CheckM2's own quality_report.tsv, unmodified
+  - versions:
+      - versions.yml:
+          type: file
+          description: File containing software versions
+
+authors:
+  - "@Bboy010"
+maintainers:
+  - "@Bboy010"

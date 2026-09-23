@@ -2,10 +2,10 @@ process BOWTIE2_ALIGN {
     tag "$meta.id"
     label 'process_high'
 
-    conda 'bioconda::bowtie2=2.5.3 bioconda::samtools=1.19'
+    conda 'bioconda::bowtie2=2.5.4 bioconda::samtools=1.21'
     container "${ workflow.containerEngine == 'singularity' ?
-        'https://depot.galaxyproject.org/singularity/mulled-v2-ac74a7f02cebcfcc07d8e8d1a750d2acf4f99599:f70b2a4d0353cdd6dc64edde26e0b8f6' :
-        'biocontainers/mulled-v2-ac74a7f02cebcfcc07d8e8d1a750d2acf4f99599:f70b2a4d0353cdd6dc64edde26e0b8f6' }"
+        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/b4/b41b403e81883126c3227fc45840015538e8e2212f13abc9ae84e4b98891d51c/data' :
+        'community.wave.seqera.io/library/bowtie2_htslib_samtools_pigz:edeb13799090a2a6' }"
 
     input:
     tuple val(meta), path(reads)

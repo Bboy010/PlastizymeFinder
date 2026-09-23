@@ -23,20 +23,34 @@ workflow ASSEMBLY_ANNOTATION {
 
     // 3a. De novo assembly with MEGAHIT
     MEGAHIT(reads)
-    ch_contigs  = MEGAHIT.out.contigs
     ch_versions = ch_versions.mix(MEGAHIT.out.versions.first())
 
+    // A shallow or low-complexity sample can yield no contig above
+    // --min-contig-len. That is a legitimate outcome, not a failure: drop the
+    // sample here with a warning rather than let bowtie2-build die on an empty
+    // FASTA and take the whole run with it. An empty gzip stream is ~20 bytes.
+    ch_contigs = MEGAHIT.out.contigs
+        .branch { _meta, fasta ->
+            assembled: fasta.size() > 1024
+            empty:     true
+        }
+
+    ch_contigs.empty.view { meta, _fasta ->
+        "WARN: ${meta.id} produced no contig above the minimum length - " +
+        "the sample is dropped from assembly-based stages"
+    }
+
     // 3b. Assembly quality evaluation with QUAST
-    QUAST_ASSEMBLY(ch_contigs, [], [])
+    QUAST_ASSEMBLY(ch_contigs.assembled, [], [])
     ch_versions = ch_versions.mix(QUAST_ASSEMBLY.out.versions.first())
 
     // 3c. Gene prediction with Prodigal (metagenomic mode)
-    PRODIGAL(ch_contigs, 'gff')
+    PRODIGAL(ch_contigs.assembled, 'gff')
     def ch_proteins = PRODIGAL.out.amino_acid_fasta
     ch_versions = ch_versions.mix(PRODIGAL.out.versions.first())
 
     // 3d. Index contigs and map reads back → coverage BAMs for MetaBAT2
-    BOWTIE2_BUILD(ch_contigs)
+    BOWTIE2_BUILD(ch_contigs.assembled)
     def ch_index = BOWTIE2_BUILD.out.index
     ch_versions = ch_versions.mix(BOWTIE2_BUILD.out.versions.first())
 
@@ -50,7 +64,7 @@ workflow ASSEMBLY_ANNOTATION {
     ch_versions = ch_versions.mix(BOWTIE2_ALIGN_CONTIGS.out.versions.first())
 
     emit:
-    contigs  = ch_contigs   // [ meta, contigs.fa ] → Binning
+    contigs  = ch_contigs.assembled  // [ meta, contigs.fa ] → Binning
     bam      = ch_bam       // [ meta, sorted.bam ] → MetaBAT2 depth
     quast    = QUAST_ASSEMBLY.out.tsv   // [ meta, report.tsv ] → reporting
     proteins = ch_proteins  // [ meta, proteins.faa ] → fallback for Stage 7 if annotation skipped

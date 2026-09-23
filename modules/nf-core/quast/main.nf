@@ -5,7 +5,7 @@ process QUAST {
     conda 'bioconda::quast=5.2.0'
     container "${ workflow.containerEngine == 'singularity' ?
         'https://depot.galaxyproject.org/singularity/quast:5.2.0--py39pl5321h2add14b_1' :
-        'biocontainers/quast:5.2.0--py39pl5321h2add14b_1' }"
+        'quay.io/biocontainers/quast:5.2.0--py39pl5321h2add14b_1' }"
 
     input:
     tuple val(meta), path(consensus)
