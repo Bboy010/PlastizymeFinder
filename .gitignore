@@ -50,3 +50,7 @@ JULES_REPORT.md
 docs/figures/*.png
 docs/figures/*.html
 docs/figures/*.txt
+
+# Deck source material: the official Summit template, supplied by the organisers.
+# Kept locally, not a pipeline artefact.
+Hongo-Nextflow Summit 2026.pptx
