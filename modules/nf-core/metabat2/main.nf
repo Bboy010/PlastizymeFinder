@@ -15,6 +15,7 @@ process METABAT2 {
     tuple val(meta), path('bins/*.fa'),          emit: bins
     tuple val(meta), path('*.unbinned.fa'),      optional: true, emit: unbinned
     tuple val(meta), path('*.depth.txt'),        emit: depth
+    tuple val(meta), path('*.abund.txt'),        emit: abundance
     path  'versions.yml',                        emit: versions
 
     when:
@@ -28,6 +29,10 @@ process METABAT2 {
     jgi_summarize_bam_contig_depths \\
         --outputDepth ${prefix}.depth.txt \\
         $bam
+
+    # MaxBin2 reads the same coverage as a two-column abundance file
+    # (contig, mean depth), without header - as nf-core/mag derives it.
+    awk -F '\\t' 'NR > 1 { print \$1 "\\t" \$3 }' ${prefix}.depth.txt > ${prefix}.abund.txt
 
     # Run MetaBAT2 binning
     mkdir -p bins
@@ -67,6 +72,7 @@ process METABAT2 {
     touch bins/${prefix}.fa
     touch ${prefix}.unbinned.fa
     touch ${prefix}.depth.txt
+    touch ${prefix}.abund.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

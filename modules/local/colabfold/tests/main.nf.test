@@ -1,0 +1,64 @@
+nextflow_process {
+
+    name "Test Process COLABFOLD"
+    script "../main.nf"
+    process "COLABFOLD"
+
+    tag "modules"
+    tag "modules_local"
+    tag "colabfold"
+
+    // A real fold needs the ~4 GB AlphaFold2 weights and hours of CPU (or a
+    // GPU), which no CI runner has. What can run for real is the empty-input
+    // path: stage 7 finding no candidate is a normal outcome, and the module
+    // must then emit no structure rather than fail or hand TM-Align a
+    // placeholder.
+    test("no candidate - no structure emitted") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test' ],
+                    file("\${projectDir}/assets/testdata/empty.faa", checkIfExists: true)
+                ]
+                input[1] = []
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.pdb.size() == 0 },
+                { assert process.out.plddt.size() == 0 },
+                { assert snapshot(process.out.versions).match('versions') }
+            )
+        }
+    }
+
+    test("candidate - stub") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test' ],
+                    file("\${projectDir}/assets/testdata/pet_db_test.fasta", checkIfExists: true)
+                ]
+                input[1] = []
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert process.out.pdb.size() == 1 },
+                { assert path(process.out.plddt.get(0).get(1)).readLines()[0] == 'model\tmean_plddt' }
+            )
+        }
+    }
+}

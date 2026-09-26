@@ -39,13 +39,18 @@ workflow {
         return
     }
 
-    // Validate mandatory parameters
-    if (!params.input && !params.candidates_fasta) {
-        error "ERROR: Please provide either --input <samplesheet.csv> (reads) or --candidates_fasta <sequences.fasta> (a FASTA you already have)"
+    // Validate mandatory parameters: exactly one of the three entry points
+    def entry_points = [params.input, params.contigs_input, params.candidates_fasta].findAll { p -> p }
+    if (entry_points.size() == 0) {
+        error "ERROR: Please provide one of --input <samplesheet.csv> (reads), --contigs_input <samplesheet.csv> (assemblies and bins, e.g. from nf-core/mag) or --candidates_fasta <sequences.fasta> (a FASTA you already have)"
     }
 
-    if (params.input && params.candidates_fasta) {
-        error "ERROR: --input and --candidates_fasta are two different entry points - provide one, not both"
+    if (entry_points.size() > 1) {
+        error "ERROR: --input, --contigs_input and --candidates_fasta are different entry points - provide one, not several"
+    }
+
+    if (params.contigs_input && !file(params.contigs_input).exists()) {
+        error "ERROR: --contigs_input samplesheet does not exist: ${params.contigs_input}"
     }
 
     if (params.candidates_fasta && !file(params.candidates_fasta).exists()) {

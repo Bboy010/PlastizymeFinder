@@ -11,7 +11,6 @@
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
             "required": [
-                "input",
                 "outdir",
                 "pet_db"
             ],
@@ -20,8 +19,15 @@
                     "type": "string",
                     "format": "file-path",
                     "description": "Path to comma-separated samplesheet file containing information about samples.",
-                    "help_text": "You will need to create a samplesheet with information about the samples you want to analyse before running the pipeline. Use this parameter to specify its location. Not needed if --candidates_fasta is set instead.",
+                    "help_text": "You will need to create a samplesheet with information about the samples you want to analyse before running the pipeline. Use this parameter to specify its location. Exactly one of --input, --contigs_input and --candidates_fasta must be set.",
                     "fa_icon": "fas fa-file-csv"
+                },
+                "contigs_input": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Samplesheet of assemblies (and optionally bins) produced by another pipeline, typically nf-core/mag. Skips stages 1-4. Replaces --input.",
+                    "help_text": "CSV with columns sample,contigs,bins. `contigs` is an assembly FASTA (gzipped or not); `bins` is optional, a directory or a glob of bin FASTAs. Bins go through stage 5 (CheckM2 + dRep with this pipeline's thresholds); contigs no bin claimed are screened as unbinned; without bins every contig is screened. bin/mag2plastizyme.py writes this sheet from an nf-core/mag results directory.",
+                    "fa_icon": "fas fa-link"
                 },
                 "candidates_fasta": {
                     "type": "string",
@@ -148,6 +154,33 @@
                     "description": "Minimum bin size (bp) for MetaBAT2.",
                     "default": 200000,
                     "fa_icon": "fas fa-ruler"
+                },
+                "skip_maxbin2": {
+                    "type": "boolean",
+                    "description": "Do not run MaxBin2 (its bins only feed DAS Tool).",
+                    "default": false,
+                    "fa_icon": "fas fa-forward"
+                },
+                "skip_concoct": {
+                    "type": "boolean",
+                    "description": "Do not run CONCOCT (its bins only feed DAS Tool).",
+                    "default": false,
+                    "fa_icon": "fas fa-forward"
+                },
+                "refine_bins_dastool": {
+                    "type": "boolean",
+                    "description": "Refine the bins of MetaBAT2, MaxBin2 and CONCOCT into one non-redundant set with DAS Tool.",
+                    "help_text": "Set to false to run MetaBAT2 alone, the configuration of the study (Hongo et al. 2026). Pass it through a profile or -params-file: since Nextflow 25, `--refine_bins_dastool false` on the command line arrives as the String \"false\", which is truthy.",
+                    "default": true,
+                    "fa_icon": "fas fa-filter"
+                },
+                "dastool_score_threshold": {
+                    "type": "number",
+                    "description": "DAS Tool --score_threshold: minimum score for a bin to be kept.",
+                    "default": 0.5,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "fa_icon": "fas fa-sliders-h"
                 },
                 "min_completeness": {
                     "type": "number",

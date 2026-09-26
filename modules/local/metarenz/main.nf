@@ -2,11 +2,15 @@ process METARENZ {
     tag "${meta.id}"
     label 'process_medium'
 
-    // MeTarEnz is distributed only as a Docker image by its authors — there is
-    // no Bioconda recipe, so this module cannot run under -profile conda.
+    // MeTarEnz is a published third-party tool (Foroozandeh Shahraki et al.,
+    // Nat. Prod. Bioprospect. 2024, doi:10.1007/s13659-023-00426-8), distributed
+    // only as a Docker image by its authors — there is no Bioconda recipe, so
+    // this module cannot run under -profile conda.
     //
-    // The image below is the upstream one plus procps, which Nextflow needs to
-    // collect task metrics; see containers/metarenz/Dockerfile for the two-line
+    // The image below is the upstream one plus procps. It cannot be used as
+    // published: Nextflow's task wrapper exits with "Command 'ps' required by
+    // nextflow to collect task metrics cannot be found" whenever trace, report
+    // or timeline is on. See containers/metarenz/Dockerfile for the two-line
     // recipe and the build/push instructions. Override it with:
     //   process { withName: 'METARENZ' { container = '<your-registry>/...' } }
     //
