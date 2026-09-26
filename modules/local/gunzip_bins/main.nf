@@ -40,7 +40,7 @@ process GUNZIP_BINS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        gzip: \$( gzip --version 2>&1 | head -1 | sed 's/^gzip //' )
+        gzip: "\$( (gzip --version 2>/dev/null || busybox 2>&1) | head -1 | sed -E 's/^gzip //; s/[,(].*//; s/ +\$//' )"
     END_VERSIONS
     """
 
