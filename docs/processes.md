@@ -5,14 +5,14 @@
 
 | Item | Value |
 |---|---|
-| Nextflow | 26.04.6 |
-| Processes defined | 31 |
-| Process aliases | 6 |
-| Local modules | 13 |
-| Stub blocks | 31/31 |
-| meta.yml | 6/31 |
-| tests/ suites | 3/31 |
-| Processes executed | 33/33 completed |
+| Nextflow | 26.04.0 |
+| Processes defined | 45 |
+| Process aliases | 7 |
+| Local modules | 18 |
+| Stub blocks | 45/45 |
+| meta.yml | 17/45 |
+| tests/ suites | 4/45 |
+| Processes executed | 39/39 completed |
 
 ## Processes executed
 
@@ -20,75 +20,79 @@
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `CDD_DB_DOWNLOAD` | `biocontainers/wget:1.21.4` | process_single | `not published` | OK |
-| `DBCAN2_DB_DOWNLOAD` | `quay.io/biocontainers/dbcan:4.0.0--pyhdfd78af_0` | process_single | `not published` | OK |
-| `EGGNOG_DB_DOWNLOAD` | `quay.io/biocontainers/eggnog-mapper:2.1.12--pyhdfd78af_0` | process_single | `not published` | OK |
-| `GTDBTK_DB_DOWNLOAD` | `quay.io/biocontainers/gtdbtk:2.4.0--pyhdfd78af_0` | process_single | `not published` | OK |
-| `KOFAMSCAN_DB_DOWNLOAD` | `quay.io/biocontainers/kofamscan:1.3.0--hdfd78af_2` | process_single | `not published` | OK |
-| `KRAKEN2_DB_DOWNLOAD` | `quay.io/biocontainers/kraken2:2.1.3--pl5321hdcf5f25_0` | process_single | `not published` | OK |
-| `METAPHLAN4_DB_DOWNLOAD` | `quay.io/biocontainers/metaphlan:4.1.0--pyhca03a8a_0` | process_single | `not published` | OK |
-| `PETASE_REF_DOWNLOAD` | `biocontainers/wget:1.21.4` | process_single | `results/petase` | OK |
+| `PETASE_REF_DOWNLOAD` | `quay.io/biocontainers/wget:1.21.4` | process_single | `results/petase` | OK |
 
 ### Stage 1 - Quality control
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `FASTP` | `biocontainers/fastp:0.23.4--h5f740d0_0` | process_medium | `results/fastp` | OK |
-| `FASTQC_RAW`<br><sub>alias of FASTQC</sub> | `biocontainers/fastqc:0.12.1--hdfd78af_0` | process_medium | `results/fastqc/raw` | OK |
-| `FASTQC_TRIMMED`<br><sub>alias of FASTQC</sub> | `biocontainers/fastqc:0.12.1--hdfd78af_0` | process_medium | `results/fastqc/trimmed` | OK |
+| `FASTP` | `quay.io/biocontainers/fastp:0.23.4--h5f740d0_0` | process_medium | `results/fastp` | OK |
+| `FASTQC_RAW`<br><sub>alias of FASTQC</sub> | `quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0` | process_medium | `results/fastqc/raw` | OK |
+| `FASTQC_TRIMMED`<br><sub>alias of FASTQC</sub> | `quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0` | process_medium | `results/fastqc/trimmed` | OK |
 
 ### Stage 2 - Taxonomic profiling
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `KRAKEN2` | `docker://staphb/kraken2:2.1.3`<br><sub>config override</sub> | process_high | `results/taxonomy/kraken2` | OK |
-| `METAPHLAN4` | `biocontainers/metaphlan:4.1.0--pyhca03a8a_0` | process_high | `results/taxonomy/metaphlan4` | OK |
+| `KRAKEN2` | `staphb/kraken2:2.1.3`<br><sub>config override</sub> | process_high | `results/taxonomy/kraken2` | OK |
+| `METAPHLAN4` | `quay.io/biocontainers/metaphlan:4.1.0--pyhca03a8a_0` | process_high | `results/taxonomy/metaphlan4` | OK |
 
 ### Stage 3 - Assembly and gene prediction
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `BOWTIE2_ALIGN_CONTIGS`<br><sub>alias of BOWTIE2_ALIGN</sub> | `docker://staphb/bowtie2:2.5.3`<br><sub>config override</sub> | process_high | `results/assembly/coverage` | OK |
-| `BOWTIE2_BUILD` | `docker://staphb/bowtie2:2.5.3`<br><sub>config override</sub> | process_medium | `not published` | OK |
-| `MEGAHIT` | `biocontainers/megahit:1.2.9--h5b5514e_2` | process_high | `results/assembly` | OK |
-| `PRODIGAL` | `biocontainers/prodigal:2.6.3--hec16e2b_5` | process_medium | `results/annotation/prodigal/${params.assembler}` | OK |
-| `QUAST_ASSEMBLY`<br><sub>alias of QUAST</sub> | `biocontainers/quast:5.2.0--py39pl5321h2add14b_1` | process_medium | `results/assembly/quast` | OK |
+| `BOWTIE2_ALIGN_CONTIGS`<br><sub>alias of BOWTIE2_ALIGN</sub> | `community.wave.seqera.io/library/bowtie2_htslib_samtools_pigz:edeb13799090a2a6` | process_high | `results/assembly/coverage` | OK |
+| `BOWTIE2_BUILD` | `community.wave.seqera.io/library/bowtie2_htslib_samtools_pigz:edeb13799090a2a6` | process_medium | `not published` | OK |
+| `MEGAHIT` | `quay.io/biocontainers/megahit:1.2.9--h5b5514e_2` | process_high | `results/assembly` | OK |
+| `PRODIGAL` | `quay.io/biocontainers/prodigal:2.6.3--hec16e2b_5` | process_medium | `results/annotation/prodigal/${params.assembler}` | OK |
+| `QUAST_ASSEMBLY`<br><sub>alias of QUAST</sub> | `quay.io/biocontainers/quast:5.2.0--py39pl5321h2add14b_1` | process_medium | `results/assembly/quast` | OK |
 
 ### Stage 4 - Binning
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `METABAT2` | `biocontainers/metabat2:2.17--h4da6f23_0` | process_high | `results/binning/metabat2` | OK |
+| `CONTIG2BIN` | `quay.io/biocontainers/das_tool:1.1.7--r44hdfd78af_1` | process_single | `not published` | OK |
+| `DASTOOL_DASTOOL` | `quay.io/biocontainers/das_tool:1.1.7--r44hdfd78af_1` | process_medium | `results/binning/dastool` | OK |
+| `EXTRACT_UNBINNED` | `quay.io/biocontainers/metabat2:2.18--h6f16272_0` | process_single | `results/binning/unbinned` | OK |
+| `CONCOCT_CONCOCT` | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | process_high | `results/binning/concoct/stats` | OK |
+| `CONCOCT_CONCOCTCOVERAGETABLE` | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | process_single | `results/binning/concoct/stats` | OK |
+| `CONCOCT_CUTUPFASTA` | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | process_single | `not published` | OK |
+| `CONCOCT_EXTRACTFASTABINS` | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | process_single | `results/binning/concoct` | OK |
+| `CONCOCT_MERGECUTUPCLUSTERING` | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | process_single | `results/binning/concoct/stats` | OK |
+| `GUNZIP_CONTIGS`<br><sub>alias of GUNZIP</sub> | `community.wave.seqera.io/library/coreutils_grep_gzip_lbzip2_pruned:838ba80435a629f8` | process_single | `not published` | OK |
+| `MAXBIN2` | `quay.io/biocontainers/maxbin2:2.2.7--he1b5a44_2` | process_medium | `results/binning/maxbin2` | OK |
+| `METABAT2` | `quay.io/biocontainers/metabat2:2.18--h6f16272_0` | process_high | `results/binning/metabat2` | OK |
+| `SAMTOOLS_INDEX` | `community.wave.seqera.io/library/htslib_samtools:1.24--d697cfb9dce007cd` | process_low | `not published` | OK |
 
 ### Stage 5 - Bin QC and dereplication
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `DREP` | `biocontainers/drep:3.4.5--pyhdfd78af_0` | process_high | `results/bin_qc/drep` | OK |
-| `QUAST_BINS`<br><sub>alias of QUAST</sub> | `biocontainers/quast:5.2.0--py39pl5321h2add14b_1` | process_medium | `results/bin_qc/quast` | OK |
+| `DREP` | `quay.io/biocontainers/drep:3.4.5--pyhdfd78af_0` | process_high | `results/bin_qc/drep` | OK |
+| `QUAST_BINS`<br><sub>alias of QUAST</sub> | `quay.io/biocontainers/quast:5.2.0--py39pl5321h2add14b_1` | process_medium | `results/bin_qc/quast` | OK |
 
 ### Stage 6 - Functional and taxonomic annotation
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `CDHIT` | `biocontainers/cd-hit:4.8.1--hdbdd923_2` | process_high | `results/annotation/cdhit` | OK |
-| `DBCAN2` | `quay.io/biocontainers/dbcan:5.2.9--pyhdfd78af_0` | process_high | `results/annotation/dbcan2` | OK |
-| `EGGNOG_MAPPER` | `biocontainers/eggnog-mapper:2.1.12--pyhdfd78af_0` | process_high | `results/annotation/eggnog` | OK |
-| `GTDBTK_CLASSIFYWF` | `biocontainers/gtdbtk:2.4.0--pyhdfd78af_1` | process_high | `results/taxonomy/gtdbtk` | OK |
-| `KOFAMSCAN` | `biocontainers/kofamscan:1.3.0--hdfd78af_2` | process_high | `results/annotation/kofamscan` | OK |
-| `PROKKA` | `biocontainers/prokka:1.14.6--pl5321hdfd78af_4` | process_medium | `results/annotation/prokka` | OK |
+| `CDHIT` | `quay.io/biocontainers/cd-hit:4.8.1--hdbcaa40_2` | process_high | `results/annotation/cdhit` | OK |
+| `DBCAN2` | `quay.io/biocontainers/dbcan:3.0.7--pyh5e36f6f_0` | process_high | `results/annotation/dbcan2` | OK |
+| `EGGNOG_MAPPER` | `quay.io/biocontainers/eggnog-mapper:2.1.12--pyhdfd78af_0` | process_high | `results/annotation/eggnog` | OK |
+| `GTDBTK_CLASSIFYWF` | `quay.io/biocontainers/gtdbtk:2.4.0--pyhdfd78af_1` | process_high | `results/taxonomy/gtdbtk` | OK |
+| `KOFAMSCAN` | `quay.io/biocontainers/kofamscan:1.3.0--hdfd78af_2` | process_high | `results/annotation/kofamscan` | OK |
+| `PROKKA` | `quay.io/biocontainers/prokka:1.14.6--pl5321hdfd78af_4` | process_medium | `results/annotation/prokka` | OK |
 
 ### Stage 7 - Plastizyme prediction
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `METARENZ` | `plastizymefinder/metarenz:1.0` | process_medium | `results/plastizyme_prediction/metarenz` | OK |
+| `METARENZ` | `ghcr.io/bboy010/plastizymefinder-metarenz:1.0` | process_medium | `results/plastizyme_prediction/metarenz` | OK |
 
 ### Stage 8 - Structural validation
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `ALPHAFOLD2` | `catgumag/alphafold:2.3.2` | process_high | `results/structure/alphafold2` | OK |
+| `COLABFOLD` | `quay.io/biocontainers/colabfold:1.5.5--pyh7cba7a3_2` | process_high | `results/structure/colabfold` | OK |
 | `RPSBLAST` | `community.wave.seqera.io/library/blast:2.17.0--d4fb881691596759` | process_medium | `results/structure/cdsearch` | OK |
 | `TMALIGN` | `quay.io/biocontainers/tmalign:20240303--hd63eeec_0` | process_low | `results/structure/tmalign` | OK |
 
@@ -96,41 +100,55 @@
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `MULTIQC` | `biocontainers/multiqc:1.21--pyhdfd78af_0` | process_single | `results/multiqc` | OK |
+| `MULTIQC` | `quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0` | process_single | `results/multiqc` | OK |
 | `PLOT_REPORT` | `quay.io/biocontainers/matplotlib:3.5.1` | process_single | `results/figures` | OK |
 
 ## Module inventory
 
 | Module | Origin | Container | Emitted channels | stub | meta.yml | tests |
 |---|---|---|---|---|---|---|
-| `ALPHAFOLD2` | local | `catgumag/alphafold:2.3.2` | `pdb`, `raw` | yes | yes | NO |
-| `BOWTIE2_ALIGN` | nf-core copy | `biocontainers/mulled-v2-ac74a7f02cebcfcc07d8e8d1a750d2acf4f99599:f70b2a4d0353cdd6dc64edde26e0b8f6` | `bam`, `bai`, `log`, `fastq` | yes | NO | NO |
-| `BOWTIE2_BUILD` | nf-core copy | `biocontainers/bowtie2:2.5.3--py310h8d7afc0_0` | `index` | yes | NO | NO |
-| `CDD_DB_DOWNLOAD` | local | `biocontainers/wget:1.21.4` | `db` | yes | yes | NO |
-| `CDHIT` | nf-core copy | `biocontainers/cd-hit:4.8.1--hdbdd923_2` | `fasta`, `clusters` | yes | NO | NO |
-| `DBCAN2` | nf-core copy | `quay.io/biocontainers/dbcan:5.2.9--pyhdfd78af_0` | `overview`, `hmmer`, `diamond` | yes | NO | NO |
-| `DBCAN2_DB_DOWNLOAD` | local | `quay.io/biocontainers/dbcan:4.0.0--pyhdfd78af_0` | `db` | yes | NO | NO |
-| `DREP` | nf-core copy | `biocontainers/drep:3.4.5--pyhdfd78af_0` | `passed_bins`, `results` | yes | NO | NO |
+| `BOWTIE2_ALIGN` | nf-core copy | `community.wave.seqera.io/library/bowtie2_htslib_samtools_pigz:edeb13799090a2a6` | `bam`, `bai`, `log`, `fastq` | yes | NO | NO |
+| `BOWTIE2_BUILD` | nf-core copy | `community.wave.seqera.io/library/bowtie2_htslib_samtools_pigz:edeb13799090a2a6` | `index` | yes | NO | NO |
+| `CDD_DB_DOWNLOAD` | local | `quay.io/biocontainers/wget:1.21.4` | `db` | yes | yes | NO |
+| `CDHIT` | nf-core copy | `quay.io/biocontainers/cd-hit:4.8.1--hdbcaa40_2` | `fasta`, `clusters` | yes | NO | NO |
+| `CHECKM2` | local | `quay.io/biocontainers/checkm2:1.0.2--pyh7cba7a3_0` | `genome_info`, `report` | yes | yes | NO |
+| `CHECKM2_DB_DOWNLOAD` | local | `quay.io/biocontainers/checkm2:1.0.2--pyh7cba7a3_0` | `db` | yes | yes | NO |
+| `COLABFOLD` | local | `quay.io/biocontainers/colabfold:1.5.5--pyh7cba7a3_2` | `pdb`, `plddt`, `raw` | yes | yes | yes |
+| `CONCOCT_CONCOCT` | nf-core copy | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | `args_txt`, `clustering_csv`, `log_txt`, `original_data_csv`, `pca_components_csv`, `pca_transformed_csv`, `versions_concoct` | yes | yes | NO |
+| `CONCOCT_CONCOCTCOVERAGETABLE` | nf-core copy | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | `tsv`, `versions_concoct` | yes | yes | NO |
+| `CONCOCT_CUTUPFASTA` | nf-core copy | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | `fasta`, `bed`, `versions_concoct` | yes | yes | NO |
+| `CONCOCT_EXTRACTFASTABINS` | nf-core copy | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | `fasta`, `versions_concoct` | yes | yes | NO |
+| `CONCOCT_MERGECUTUPCLUSTERING` | nf-core copy | `quay.io/biocontainers/concoct:1.1.0--py39h8907335_8` | `csv`, `versions_concoct` | yes | yes | NO |
+| `CONTIG2BIN` | local | `quay.io/biocontainers/das_tool:1.1.7--r44hdfd78af_1` | `tsv` | yes | NO | NO |
+| `DASTOOL_DASTOOL` | nf-core copy | `quay.io/biocontainers/das_tool:1.1.7--r44hdfd78af_1` | `log`, `summary`, `contig2bin`, `eval`, `bins`, `pdfs`, `candidates_faa`, `fasta_proteins`, `fasta_archaea_scg`, `fasta_bacteria_scg`, `b6`, `seqlength`, `versions_dastool` | yes | yes | NO |
+| `DBCAN2` | nf-core copy | `quay.io/biocontainers/dbcan:3.0.7--pyh5e36f6f_0` | `overview`, `hmmer`, `diamond` | yes | NO | NO |
+| `DBCAN2_DB_DOWNLOAD` | local | `quay.io/biocontainers/dbcan:3.0.7--pyh5e36f6f_0` | `db` | yes | NO | NO |
+| `DREP` | nf-core copy | `quay.io/biocontainers/drep:3.4.5--pyhdfd78af_0` | `passed_bins`, `results` | yes | NO | NO |
 | `EGGNOG_DB_DOWNLOAD` | local | `quay.io/biocontainers/eggnog-mapper:2.1.12--pyhdfd78af_0` | `db` | yes | NO | NO |
-| `EGGNOG_MAPPER` | nf-core copy | `biocontainers/eggnog-mapper:2.1.12--pyhdfd78af_0` | `annotations`, `hits`, `orthologs` | yes | NO | NO |
-| `FASTP` | nf-core copy | `biocontainers/fastp:0.23.4--h5f740d0_0` | `reads`, `json`, `html`, `log`, `reads_fail`, `reads_merged` | yes | NO | NO |
-| `FASTQC` | nf-core copy | `biocontainers/fastqc:0.12.1--hdfd78af_0` | `html`, `zip` | yes | NO | NO |
-| `GTDBTK_CLASSIFYWF` | nf-core copy | `biocontainers/gtdbtk:2.4.0--pyhdfd78af_1` | `results`, `summary`, `tree` | yes | NO | NO |
+| `EGGNOG_MAPPER` | nf-core copy | `quay.io/biocontainers/eggnog-mapper:2.1.12--pyhdfd78af_0` | `annotations`, `hits`, `orthologs` | yes | NO | NO |
+| `EXTRACT_UNBINNED` | local | `quay.io/biocontainers/metabat2:2.18--h6f16272_0` | `unbinned` | yes | NO | NO |
+| `FASTP` | nf-core copy | `quay.io/biocontainers/fastp:0.23.4--h5f740d0_0` | `reads`, `json`, `html`, `log`, `reads_fail`, `reads_merged` | yes | NO | NO |
+| `FASTQC` | nf-core copy | `quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0` | `html`, `zip` | yes | NO | NO |
+| `GTDBTK_CLASSIFYWF` | nf-core copy | `quay.io/biocontainers/gtdbtk:2.4.0--pyhdfd78af_1` | `results`, `summary`, `tree` | yes | NO | NO |
 | `GTDBTK_DB_DOWNLOAD` | local | `quay.io/biocontainers/gtdbtk:2.4.0--pyhdfd78af_0` | `db` | yes | NO | NO |
-| `KOFAMSCAN` | nf-core copy | `biocontainers/kofamscan:1.3.0--hdfd78af_2` | `hits` | yes | NO | NO |
+| `GUNZIP` | nf-core copy | `community.wave.seqera.io/library/coreutils_grep_gzip_lbzip2_pruned:838ba80435a629f8` | `gunzip`, `versions_gunzip` | yes | yes | NO |
+| `GUNZIP_BINS` | local | `quay.io/biocontainers/metabat2:2.18--h6f16272_0` | `bins` | yes | NO | NO |
+| `KOFAMSCAN` | nf-core copy | `quay.io/biocontainers/kofamscan:1.3.0--hdfd78af_2` | `hits` | yes | NO | NO |
 | `KOFAMSCAN_DB_DOWNLOAD` | local | `quay.io/biocontainers/kofamscan:1.3.0--hdfd78af_2` | `db` | yes | NO | NO |
-| `KRAKEN2` | nf-core copy | `biocontainers/mulled-v2-5799ab18b5fc678e5ddc5b14f99c9254caacacd7:d36906b073db2c9e71edd5a34e47ce56d95d8f74-0` | `classified_reads_fastq`, `unclassified_reads_fastq`, `classified_reads_assignment`, `report` | yes | NO | NO |
+| `KRAKEN2` | nf-core copy | `quay.io/biocontainers/kraken2:2.1.3--pl5321hdcf5f25_0` | `classified_reads_fastq`, `unclassified_reads_fastq`, `classified_reads_assignment`, `report` | yes | NO | NO |
 | `KRAKEN2_DB_DOWNLOAD` | local | `quay.io/biocontainers/kraken2:2.1.3--pl5321hdcf5f25_0` | `db` | yes | NO | NO |
-| `MEGAHIT` | nf-core copy | `biocontainers/megahit:1.2.9--h5b5514e_2` | `contigs`, `log` | yes | NO | NO |
-| `METABAT2` | nf-core copy | `biocontainers/metabat2:2.17--h4da6f23_0` | `bins`, `unbinned`, `depth` | yes | NO | NO |
-| `METAPHLAN4` | nf-core copy | `biocontainers/metaphlan:4.1.0--pyhca03a8a_0` | `profile`, `bowtie2out` | yes | NO | NO |
+| `MAXBIN2` | nf-core copy | `quay.io/biocontainers/maxbin2:2.2.7--he1b5a44_2` | `binned_fastas`, `summary`, `abundance`, `log`, `marker_counts`, `unbinned_fasta`, `tooshort_fasta`, `marker_bins`, `marker_genes`, `versions_maxbin2` | yes | yes | NO |
+| `MEGAHIT` | nf-core copy | `quay.io/biocontainers/megahit:1.2.9--h5b5514e_2` | `contigs`, `log` | yes | NO | NO |
+| `METABAT2` | nf-core copy | `quay.io/biocontainers/metabat2:2.18--h6f16272_0` | `bins`, `unbinned`, `depth`, `abundance` | yes | NO | NO |
+| `METAPHLAN4` | nf-core copy | `quay.io/biocontainers/metaphlan:4.1.0--pyhca03a8a_0` | `profile`, `bowtie2out` | yes | NO | NO |
 | `METAPHLAN4_DB_DOWNLOAD` | local | `quay.io/biocontainers/metaphlan:4.1.0--pyhca03a8a_0` | `db` | yes | NO | NO |
-| `METARENZ` | local | `plastizymefinder/metarenz:1.0` | `csv`, `candidates` | yes | yes | yes |
-| `MULTIQC` | nf-core copy | `biocontainers/multiqc:1.21--pyhdfd78af_0` | `report`, `data`, `plots` | yes | NO | NO |
-| `PETASE_REF_DOWNLOAD` | local | `biocontainers/wget:1.21.4` | `pdb` | yes | NO | NO |
+| `METARENZ` | local | `ghcr.io/bboy010/plastizymefinder-metarenz:1.0` | `csv`, `candidates` | yes | yes | yes |
+| `MULTIQC` | nf-core copy | `quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0` | `report`, `data`, `plots` | yes | NO | NO |
+| `PETASE_REF_DOWNLOAD` | local | `quay.io/biocontainers/wget:1.21.4` | `pdb` | yes | NO | NO |
 | `PLOT_REPORT` | local | `quay.io/biocontainers/matplotlib:3.5.1` | `figures`, `krona_text` | yes | yes | NO |
-| `PRODIGAL` | nf-core copy | `biocontainers/prodigal:2.6.3--hec16e2b_5` | `gene_annotations`, `amino_acid_fasta`, `nucleotide_fasta`, `all_gene_annotations` | yes | NO | NO |
-| `PROKKA` | nf-core copy | `biocontainers/prokka:1.14.6--pl5321hdfd78af_4` | `gff`, `gbk`, `fna`, `faa`, `ffn`, `sqn`, `fsa`, `tbl`, `err`, `log`, `txt`, `tsv` | yes | NO | NO |
-| `QUAST` | nf-core copy | `biocontainers/quast:5.2.0--py39pl5321h2add14b_1` | `results`, `tsv`, `html` | yes | NO | NO |
+| `PRODIGAL` | nf-core copy | `quay.io/biocontainers/prodigal:2.6.3--hec16e2b_5` | `gene_annotations`, `amino_acid_fasta`, `nucleotide_fasta`, `all_gene_annotations` | yes | NO | NO |
+| `PROKKA` | nf-core copy | `quay.io/biocontainers/prokka:1.14.6--pl5321hdfd78af_4` | `gff`, `gbk`, `fna`, `faa`, `ffn`, `sqn`, `fsa`, `tbl`, `err`, `log`, `txt`, `tsv` | yes | NO | NO |
+| `QUAST` | nf-core copy | `quay.io/biocontainers/quast:5.2.0--py39pl5321h2add14b_1` | `results`, `tsv`, `html` | yes | NO | NO |
 | `RPSBLAST` | local | `community.wave.seqera.io/library/blast:2.17.0--d4fb881691596759` | `hits` | yes | yes | yes |
+| `SAMTOOLS_INDEX` | nf-core copy | `community.wave.seqera.io/library/htslib_samtools:1.24--d697cfb9dce007cd` | `index`, `versions_samtools` | yes | yes | NO |
 | `TMALIGN` | local | `quay.io/biocontainers/tmalign:20240303--hd63eeec_0` | `results` | yes | yes | yes |

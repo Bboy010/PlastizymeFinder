@@ -17,7 +17,8 @@ differ from the paper's, and that difference is intentional.
 |---|---|---|---|
 | Conserved domains | NCBI CD-Search (web service) | RPS-BLAST against a local CDD | The web service cannot be cached, is rate-limited, requires sending sequences to NCBI, and makes a run irreproducible. **Bit scores are not identical**, so the 21-of-47 filter of the paper will not reproduce exactly. |
 | Structure prediction | ColabFold, run by hand in a notebook | `COLABFOLD` module | Same tool, same MSA server; the manual step becomes part of the pipeline and is recorded in `versions.yml`. |
-| Assembly to binning | nf-core/mag v5.4.1, run separately | Reimplemented as stages 1–6 | One pipeline end to end, with a stub path so the whole DAG can be tested without running a tool. |
+| Assembly to binning | nf-core/mag v5.4.1, run separately | Stages 1–6 in the pipeline, **or** nf-core/mag chained in front with `--contigs_input` | One pipeline end to end, with a stub path so the whole DAG can be tested without running a tool. The chained entry point takes mag's assemblies and bins, which is the paper's own route, and re-applies stage 5's thresholds to them. |
+| Binning | MetaBAT2 | MetaBAT2 + MaxBin2 + CONCOCT, refined by DAS Tool | The binners and refinement of nf-core/mag. DAS Tool lifts a limitation the paper lists. `refine_bins_dastool = false` restores MetaBAT2 alone. |
 | PET_DB | Supplied by hand | Fetched from the study's Zenodo DOI | `pet_cdhit95.faa`, 158 sequences, as published. Removes the last manual input. |
 
 ## Parameters taken from the paper
@@ -38,9 +39,11 @@ differ from the paper's, and that difference is intentional.
 
 ## Known gaps
 
-- **DAS Tool** is not implemented. The paper lists its absence as a limitation;
-  the pipeline inherits that limitation.
-- **A single binner.** MetaBAT2 only, as in the paper. nf-core/mag runs several.
+- **Reproducing the paper's binning** needs `refine_bins_dastool = false`, set
+  in a profile or with `-params-file`: on the command line, since Nextflow 25,
+  `--refine_bins_dastool false` arrives as the String `"false"`, which is truthy.
+- **COMEBin, MetaBinner and SemiBin2**, which nf-core/mag also offers, are not
+  implemented. Run mag and chain it in front to use them.
 - **CheckM** runs inside dRep and needs its database; `--skip_drep_checkm`
   bypasses the quality filter entirely, which also disables
   `min_completeness` and `max_contamination`. Leave it off for any real run.

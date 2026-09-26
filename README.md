@@ -2,7 +2,7 @@
 
 > A Nextflow metagenomics pipeline for the discovery and structural validation of plastic-degrading enzymes (plastizymes) from environmental samples.
 
-[![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
+[![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A525.04.0-23aa62.svg)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg)](https://sylabs.io/docs/)
 [![run with conda](https://img.shields.io/badge/run%20with-conda-3EB049?logo=anaconda)](https://docs.conda.io/en/latest/)
@@ -16,6 +16,7 @@
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
 - [Screening sequences you already have](#screening-sequences-you-already-have)
+- [Chaining after nf-core/mag](#chaining-after-nf-coremag)
 - [Input](#input)
 - [Databases](#databases)
 - [Parameters](#parameters)
@@ -60,11 +61,11 @@ Raw FASTQ reads
 │  MetaPhlAn4 │  │  → Prodigal         │
 └─────────────┘  └──────────┬──────────┘
                              │
-                      ┌──────▼──────┐
-                      │  Stage 4    │
-                      │  Binning    │
-                      │  MetaBAT2   │
-                      └──────┬──────┘
+                      ┌──────▼──────────────────┐
+                      │  Stage 4 — Binning      │
+                      │  MetaBAT2 │ MaxBin2 │   │
+                      │  CONCOCT → DAS Tool     │
+                      └──────┬──────────────────┘
                       bins   │  unbinned
                       ┌──────▼──────┐
                       │  Stage 5    │
@@ -102,7 +103,7 @@ Raw FASTQ reads
 
 ## Requirements
 
-- [Nextflow](https://www.nextflow.io/) ≥ 23.04.0
+- [Nextflow](https://www.nextflow.io/) ≥ 25.04.0
 - [Docker](https://www.docker.com/), [Singularity](https://sylabs.io/), or [Conda](https://docs.conda.io/)
 - Java 11 or later
 
@@ -222,6 +223,46 @@ taxonomy, annotation, MultiQC) will not appear in `results/`.
 
 ---
 
+## Chaining after nf-core/mag
+
+Stages 1–4 (read QC, assembly, binning) cover the same ground as
+[nf-core/mag](https://nf-co.re/mag), which is what the published study ran for
+them. If you already use mag, or want its assemblers and binners, run it first
+and hand its assemblies and bins to PlastizymeFinder with `--contigs_input`.
+Stages 1–4 are then skipped; stage 5 re-applies this pipeline's CheckM2 + dRep
+thresholds to mag's bins, and every contig no bin claimed is screened as
+unbinned, so nothing is left out of stage 7.
+
+```bash
+# 1. nf-core/mag, as usual
+nextflow run nf-core/mag -r 5.5.0 -profile docker \
+    --input mag_samplesheet.csv --outdir results_mag
+
+# 2. Samplesheet from mag's results (DAS Tool bins by default; --binner MetaBAT2,
+#    MaxBin2, ... for another binner, --binner none for contigs only)
+bin/mag2plastizyme.py --mag_outdir results_mag --assembler MEGAHIT > contigs_input.csv
+
+# 3. PlastizymeFinder, stages 5-8
+nextflow run Bboy010/PlastizymeFinder -profile docker \
+    --contigs_input contigs_input.csv \
+    --pet_db /path/to/pet_db.fasta \
+    --outdir results
+```
+
+The `--contigs_input` samplesheet has three columns; any tool that writes
+assemblies can fill it, not only mag:
+
+| Column    | Required | Description |
+|-----------|----------|-------------|
+| `sample`  | Yes      | Sample (or co-assembly group) identifier |
+| `contigs` | Yes      | Assembly FASTA, gzipped or not |
+| `bins`    | No       | Directory or glob of that sample's bin FASTAs. Empty: every contig is screened |
+
+`--input`, `--contigs_input` and `--candidates_fasta` are three entry points:
+provide exactly one.
+
+---
+
 ## Input
 
 ### Samplesheet format
@@ -275,7 +316,8 @@ Every database above can also point at one already on your machine — see
 
 | Parameter            | Default    | Description                                   |
 |----------------------|------------|-----------------------------------------------|
-| `--input`            | (required, unless `--candidates_fasta`) | Path to input samplesheet CSV |
+| `--input`            | (one entry point required) | Path to input samplesheet CSV |
+| `--contigs_input`    | null       | Assemblies and bins from another pipeline (nf-core/mag) — replaces `--input`, see [above](#chaining-after-nf-coremag) |
 | `--candidates_fasta` | null       | Screen a FASTA you already have — replaces `--input`, see [above](#screening-sequences-you-already-have) |
 | `--outdir`           | `results`  | Output directory                              |
 | `--pet_db`           | (required) | Path to PET_DB FASTA                         |
@@ -317,6 +359,10 @@ Every database above can also point at one already on your machine — see
 | `--assembler`       | `megahit` | De novo assembler (MEGAHIT only for now)             |
 | `--min_contig_len`  | 1500    | Minimum contig length (bp) after assembly. MetaBAT2's own hard minimum is 1500 |
 | `--min_bin_size`    | 200000  | Minimum bin size (bp) for MetaBAT2                     |
+| `--skip_maxbin2`    | false   | Do not run MaxBin2 (its bins only feed DAS Tool)       |
+| `--skip_concoct`    | false   | Do not run CONCOCT (its bins only feed DAS Tool)       |
+| `--refine_bins_dastool` | true | Refine the three binners' bins with DAS Tool. `false` runs MetaBAT2 alone, as in the study — set it in a profile or `-params-file`, not on the command line (a CLI `false` is read as the String `"false"`) |
+| `--dastool_score_threshold` | 0.5 | Minimum DAS Tool score for a bin to be kept     |
 | `--min_completeness`| 50      | Minimum bin completeness (%) for dRep filtering        |
 | `--max_contamination`| 10     | Maximum bin contamination (%) for dRep filtering       |
 | `--drep_min_length` | 50000   | Minimum bin length (bp) kept by dRep. Lower it for small test datasets |
@@ -330,6 +376,8 @@ Every database above can also point at one already on your machine — see
 | `gpu` | Exposes host GPUs to the container and enables the `accelerator` directive on GPU-capable processes (ColabFold). Combine with an engine: `-profile gpu,docker`. |
 | `test` | Minimal bundled dataset, resource-capped — a smoke test, not a reproduction. |
 | `test_real` | The two published samples subsampled to 100k read pairs each. |
+| `test_mag` | The subsampled gut metagenome nf-core/mag tests on, with the same binners as its `-profile test` (MetaBAT2, MaxBin2, DAS Tool; CONCOCT skipped). Checks stage 4 on real reads. |
+| `test_chain_mag` | `--contigs_input` on nf-core/mag's test assemblies: the chained entry point, stages 5–8. |
 | `local_dbs` | Points every database at a copy already on the machine, so nothing downloads. Combine it *after* another profile: `-profile test_real,local_dbs,docker`. See [`docs/local_databases.md`](docs/local_databases.md). |
 
 ### Resource limits
@@ -361,7 +409,11 @@ results/
 │   ├── prodigal/                   # Predicted genes (.gff, .faa, .fna)
 │   └── coverage/                   # Depth BAMs for MetaBAT2
 ├── binning/
-│   └── metabat2/                   # Bins + unbinned contigs
+│   ├── metabat2/                   # MetaBAT2 bins, depths, unbinned contigs
+│   ├── maxbin2/                    # MaxBin2 bins and summary
+│   ├── concoct/                    # CONCOCT bins (+ stats/)
+│   ├── dastool/                    # DAS Tool refined bins, scores, contig2bin
+│   └── unbinned/                   # Contigs no refined bin claimed (→ Stage 7)
 ├── bin_qc/
 │   ├── quast/                      # Per-bin QUAST stats
 │   └── drep/                       # dRep dereplicated HQ bins
@@ -403,9 +455,11 @@ Community composition is profiled using **Kraken2** (k-mer classification) and *
 Clean reads are assembled with **MEGAHIT** (default assembler, metagenomic mode). Assembly quality is evaluated with **QUAST**. Open reading frames are predicted with **Prodigal** (`-p meta`). Reads are mapped back to contigs using **Bowtie2** to generate coverage BAMs for binning.
 
 ### Stage 4 — Contig Binning
-Coverage-based binning is performed with **MetaBAT2**, producing:
+Contigs are binned by coverage and composition with **MetaBAT2**, **MaxBin2** (on MetaBAT2's depths) and **CONCOCT**, and **DAS Tool** keeps the best non-redundant bin set across the three — the binners and refinement of nf-core/mag. This produces:
 - **Bins** — contigs grouped into metagenome-assembled genomes (MAGs)
 - **Unbinned/discarded** — contigs not assigned to any bin
+
+With `refine_bins_dastool = false`, MetaBAT2 runs alone, as in the study.
 
 ### Stage 5 — Bin Quality Evaluation
 Bin assemblies are assessed with **QUAST**. Redundant and low-quality bins are filtered with **dRep** using configurable completeness (`--min_completeness`, default 50%) and contamination (`--max_contamination`, default 10%) thresholds.
@@ -417,7 +471,7 @@ High-quality bins are annotated with **Prokka** (gene prediction). All proteins 
 - **KofamScan** — KEGG Orthology (KO) assignment
 
 ### Stage 7 — Plastizyme Prediction
-This is the core stage. HQ bins and unbinned/discarded contigs from MetaBAT2 are **concatenated per sample** into a single FASTA query. **MeTarEnz** performs targeted homology search against the **PET_DB** (curated plastic-degrading enzyme sequences). Candidate plastizyme sequences are extracted from the MeTarEnz screening table.
+This is the core stage. HQ bins and unbinned/discarded contigs from Stage 4 are **concatenated per sample** into a single FASTA query. **MeTarEnz** performs targeted homology search against the **PET_DB** (curated plastic-degrading enzyme sequences). Candidate plastizyme sequences are extracted from the MeTarEnz screening table.
 
 ### Stage 8 — 3D Structure Prediction & Validation *(skippable)*
 Candidate sequences undergo:
@@ -433,7 +487,7 @@ If you use PlastizymeFinder in your research, please cite:
 
 > Hongo et al. (2026). *PlastizymeFinder: a Nextflow pipeline for metagenomic discovery of plastic-degrading enzymes.* [GitHub](https://github.com/Bboy010/PlastizymeFinder)
 
-Please also cite the tools used by the pipeline:
+Please also cite the tools used by the pipeline (full references with DOIs in [`CITATIONS.md`](CITATIONS.md)):
 
 - **Nextflow** — Di Tommaso et al., *Nature Biotechnology*, 2017
 - **FastQC** — Andrews S., 2010
@@ -443,9 +497,13 @@ Please also cite the tools used by the pipeline:
 - **QUAST** — Gurevich et al., *Bioinformatics*, 2013
 - **Prodigal** — Hyatt et al., *BMC Bioinformatics*, 2010
 - **MetaBAT2** — Kang et al., *PeerJ*, 2019
+- **MaxBin2** — Wu et al., *Bioinformatics*, 2016
+- **CONCOCT** — Alneberg et al., *Nature Methods*, 2014
+- **DAS Tool** — Sieber et al., *Nature Microbiology*, 2018
+- **SAMtools** — Danecek et al., *GigaScience*, 2021
 - **dRep** — Olm et al., *ISME Journal*, 2017
 - **Kraken2** — Wood et al., *Genome Biology*, 2019
-- **MetaPhlAn4** — Blanco-Míguez et al., *Nature Methods*, 2023
+- **MetaPhlAn4** — Blanco-Míguez et al., *Nature Biotechnology*, 2023
 - **GTDB-tk** — Chaumeil et al., *Bioinformatics*, 2019
 - **Prokka** — Seemann, *Bioinformatics*, 2014
 - **CD-HIT** — Li & Godzik, *Bioinformatics*, 2006
