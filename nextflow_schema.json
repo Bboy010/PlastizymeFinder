@@ -121,13 +121,13 @@
                 },
                 "skip_annotation": {
                     "type": "boolean",
-                    "description": "Skip gene annotation (Stage 6: eggNOG, dbCAN2, kofamscan).",
+                    "description": "Skip gene annotation (Stage 6: eggNOG, dbCAN2, KofamScan, GTDB-Tk).",
                     "default": false,
                     "fa_icon": "fas fa-forward"
                 },
                 "skip_structure": {
                     "type": "boolean",
-                    "description": "Skip 3D structure prediction (Stage 8: AlphaFold2 + TM-Align).",
+                    "description": "Skip 3D structure prediction (Stage 8: RPS-BLAST, ColabFold, TM-Align).",
                     "default": false,
                     "fa_icon": "fas fa-forward"
                 },
@@ -205,34 +205,15 @@
                     ],
                     "fa_icon": "fas fa-copy"
                 },
-                "email": {
-                    "type": "string",
-                    "description": "Email address for completion summary.",
-                    "fa_icon": "fas fa-envelope"
-                },
-                "monochrome_logs": {
-                    "type": "boolean",
-                    "description": "Do not use coloured log outputs.",
-                    "fa_icon": "fas fa-palette"
-                },
                 "multiqc_config": {
                     "type": "string",
                     "format": "file-path",
                     "description": "Custom config file to supply to MultiQC.",
                     "fa_icon": "fas fa-cog"
                 },
-                "email_on_fail": {
-                    "type": "string",
-                    "description": "Email address for completion summary, only on pipeline failure."
-                },
                 "multiqc_title": {
                     "type": "string",
                     "description": "Custom title printed in the MultiQC report."
-                },
-                "max_multiqc_email_size": {
-                    "type": "string",
-                    "default": "25.MB",
-                    "description": "Maximum size of the MultiQC report to email."
                 },
                 "tracedir": {
                     "type": "string",
@@ -311,6 +292,12 @@
                         "Pfam"
                     ],
                     "description": "CDD subset to download: 'Cdd' (full, ~1.7 GB) or 'Pfam' (~410 MB)."
+                },
+                "colabfold_weights": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "AlphaFold2 parameter directory for ColabFold. Left null, colabfold_batch downloads the weights into its own cache on first use.",
+                    "fa_icon": "fas fa-weight-hanging"
                 }
             }
         },

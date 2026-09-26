@@ -308,12 +308,29 @@ Every database above can also point at one already on your machine — see
 | Parameter           | Default | Description                                            |
 |---------------------|---------|--------------------------------------------------------|
 | `--skip_taxonomy`   | false   | Skip Stage 2 (Kraken2 + MetaPhlAn4)                   |
-| `--skip_annotation` | false   | Skip Stage 6 (eggNOG, dbCAN2, kofamscan)               |
-| `--skip_structure`  | false   | Skip Stage 8 (ColabFold + TM-Align)                   |
-| `--min_contig_len`  | 1000    | Minimum contig length (bp) after assembly              |
+| `--skip_annotation` | false   | Skip Stage 6 (eggNOG, dbCAN2, KofamScan, GTDB-Tk)      |
+| `--skip_plastizyme` | false   | Skip Stage 7 (MeTarEnz). Also skips Stage 8, which consumes its output |
+| `--skip_structure`  | false   | Skip Stage 8 (RPS-BLAST, ColabFold, TM-Align)          |
+| `--skip_drep_checkm`| false   | Skip CheckM2, leaving dRep to filter on size and ANI alone. The study's completeness/contamination thresholds are then **not** applied |
+| `--metarenz_mode`   | `cs`    | MeTarEnz screening mode: `cs` for nucleotide contigs (BLASTX) or `ps` for proteins (BLASTP) |
+| `--metarenz_bitscore`| 250    | Minimum bit-score for a candidate to be reported (Hongo et al. 2026, Methods 2.4.2) |
+| `--assembler`       | `megahit` | De novo assembler (MEGAHIT only for now)             |
+| `--min_contig_len`  | 1500    | Minimum contig length (bp) after assembly. MetaBAT2's own hard minimum is 1500 |
 | `--min_bin_size`    | 200000  | Minimum bin size (bp) for MetaBAT2                     |
 | `--min_completeness`| 50      | Minimum bin completeness (%) for dRep filtering        |
 | `--max_contamination`| 10     | Maximum bin contamination (%) for dRep filtering       |
+| `--drep_min_length` | 50000   | Minimum bin length (bp) kept by dRep. Lower it for small test datasets |
+| `--drep_skip_secondary`| false | Skip dRep's fastANI clustering. fastANI cannot compare genomes shorter than its 3 kb fragment length |
+
+### Profiles
+
+| Profile | What it does |
+|---------|--------------|
+| `docker`, `singularity`, `conda` | Container engine. Pick one. |
+| `gpu` | Exposes host GPUs to the container and enables the `accelerator` directive on GPU-capable processes (ColabFold). Combine with an engine: `-profile gpu,docker`. |
+| `test` | Minimal bundled dataset, resource-capped — a smoke test, not a reproduction. |
+| `test_real` | The two published samples subsampled to 100k read pairs each. |
+| `local_dbs` | Points every database at a copy already on the machine, so nothing downloads. Combine it *after* another profile: `-profile test_real,local_dbs,docker`. See [`docs/local_databases.md`](docs/local_databases.md). |
 
 ### Resource limits
 
