@@ -51,9 +51,15 @@ COMPOST_C,/results_mag/Assembly/MEGAHIT/MEGAHIT-COMPOST_C.contigs.fa.gz,
 | `contigs` | Assembly FASTA, gzipped or not. |
 | `bins` | Optional. A directory or a glob of that sample's bin FASTAs (`.fa`, `.fasta`, `.fna`, gzipped or not). |
 
-With bins, stage 5 re-applies this pipeline's CheckM2 + dRep thresholds, and
-every contig no bin claimed is screened as unbinned. Without bins, every
-contig of the assembly is screened.
+With bins, every bin plus every contig no bin claimed is screened (stage 7
+does not filter on bin quality - see [Binning](#binning) below). Without
+bins, every contig of the assembly is screened. Stage 6 (bin annotation and
+taxonomy) is forced off for this entry point, since it is out of scope for
+what this pipeline is to nf-core: mag for assembly and binning, this for
+screening and structure. Pass `--skip_annotation false` (through a profile
+or `-params-file`, not the command line - see the note under
+[Parameters from a file](#parameters-from-a-file)) to run it anyway; stage 5
+(CheckM2 + dRep) then re-runs to feed it.
 
 `bin/mag2plastizyme.py` writes this sheet from a mag results directory:
 

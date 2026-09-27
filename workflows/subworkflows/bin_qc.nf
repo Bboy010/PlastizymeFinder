@@ -53,7 +53,8 @@ workflow BIN_QC {
     ch_versions = ch_versions.mix(DREP.out.versions)
 
     emit:
-    passed_bins = ch_hq_bins       // → BIN_CLASSIFICATION + PLASTIZYME_PREDICTION
+    passed_bins = ch_hq_bins       // → BIN_CLASSIFICATION only (Stage 7 screens every bin
+                                    // from Stage 4 directly, not this filtered set)
     quast_stats = QUAST_BINS.out.results
     drep_tables = DREP.out.results       // [ meta, drep_output/ ] → reporting
     versions    = ch_versions

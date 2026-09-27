@@ -63,7 +63,7 @@ results/
 - `binning/maxbin2/`: MaxBin2 bins (`<sample>.maxbin2.<n>.fasta.gz`) and `*.summary`.
 - `binning/concoct/`: CONCOCT bins (`<sample>.concoct/*.fa.gz`); `stats/` holds its coverage table and clustering.
 - `binning/dastool/`: the DAS Tool refined bins (`<sample>_DASTool_bins/*.fa`), `*_DASTool_summary.tsv` (score, completeness and redundancy of each kept bin), `*_DASTool_contig2bin.tsv` and `*_allBins.eval`.
-- `binning/unbinned/`: `<sample>.unbinned.fa`, every contig no refined bin claimed. Stage 7 screens it with the high-quality bins.
+- `binning/unbinned/`: `<sample>.unbinned.fa`, every contig no refined bin claimed. Stage 7 screens it alongside every bin from this stage - all of them, not only the ones Stage 5 keeps.
 
 </details>
 

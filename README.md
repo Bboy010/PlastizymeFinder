@@ -67,37 +67,32 @@ Raw FASTQ reads
                       │  CONCOCT → DAS Tool     │
                       └──────┬──────────────────┘
                       bins   │  unbinned
-                      ┌──────▼──────┐
-                      │  Stage 5    │
-                      │  Bin QC     │
-                      │  QUAST+dRep │
-                      └──────┬──────┘
-                      HQ bins│
-                      ┌──────▼──────────────────┐
-                      │  Stage 6                │
-                      │  Bin Classification     │
-                      │  Prokka → CD-HIT →      │
-                      │  GTDB-tk                │
-                      │  eggNOG | dbCAN2 | KEGG │  (parallel)
-                      └──────┬──────────────────┘
-                             │
-              HQ bins + unbinned + PET_DB
-                      ┌──────▼──────┐
-                      │  Stage 7    │
-                      │  Plastizyme │
-                      │  Prediction │
-                      │  MeTarEnz   │
-                      └──────┬──────┘
-                      candidates
-                      ┌──────▼──────────────────┐
-                      │  Stage 8                │
-                      │  Structure Prediction   │
-                      │  CD-Search ║ ColabFold  │  (parallel)
-                      │  → TM-Align vs PETase   │
-                      └─────────────────────────┘
-                             │
+               ┌──────────────┴──────────────┐
+               ▼ (every bin, unfiltered)      ▼
+      ┌─────────────────┐         bins + unbinned + PET_DB
+      │  Stage 5        │                    │
+      │  Bin QC         │             ┌──────▼──────┐
+      │  QUAST + dRep   │             │  Stage 7    │
+      └──────┬──────────┘             │  Plastizyme │
+        HQ bins│                      │  Prediction │
+      ┌────────▼─────────────────┐    │  MeTarEnz   │
+      │  Stage 6                 │    └──────┬──────┘
+      │  Bin Classification      │     candidates
+      │  Prokka → CD-HIT →       │    ┌──────▼──────────────────┐
+      │  GTDB-tk                 │    │  Stage 8                │
+      │  eggNOG | dbCAN2 | KEGG  │    │  Structure Prediction   │
+      └──────────┬────────────────┘   │  CD-Search ║ ColabFold  │  (parallel)
+                 │                    │  → TM-Align vs PETase   │
+                 │                    └───────────┬─────────────┘
+                 └───────────┬────────────────────┘
+                             ▼
                       MultiQC Report
 ```
+
+Stage 5/6 is a side branch, not a gate: dRep decides which bins are worth
+**annotating and classifying** (Stage 6), not which ones get **screened**
+(Stage 7). Stage 7 takes every bin straight from Stage 4, filtered or not -
+the published method's own design, matching the schema in the paper.
 
 ---
 
@@ -462,7 +457,7 @@ Contigs are binned by coverage and composition with **MetaBAT2**, **MaxBin2** (o
 With `refine_bins_dastool = false`, MetaBAT2 runs alone, as in the study.
 
 ### Stage 5 — Bin Quality Evaluation
-Bin assemblies are assessed with **QUAST**. Redundant and low-quality bins are filtered with **dRep** using configurable completeness (`--min_completeness`, default 50%) and contamination (`--max_contamination`, default 10%) thresholds.
+Bin assemblies are assessed with **QUAST**. Redundant and low-quality bins are filtered with **dRep** using configurable completeness (`--min_completeness`, default 50%) and contamination (`--max_contamination`, default 10%) thresholds. This filtered, dereplicated set feeds **Stage 6 only** — Stage 7 screens every bin from Stage 4 directly, filtered or not (see below).
 
 ### Stage 6 — Bin Classification & Annotation *(skippable)*
 High-quality bins are annotated with **Prokka** (gene prediction). All proteins are clustered with **CD-HIT** (95% identity) to remove redundancy. Taxonomic classification is performed with **GTDB-tk**. Functional annotation runs in parallel:
@@ -471,7 +466,7 @@ High-quality bins are annotated with **Prokka** (gene prediction). All proteins 
 - **KofamScan** — KEGG Orthology (KO) assignment
 
 ### Stage 7 — Plastizyme Prediction
-This is the core stage. HQ bins and unbinned/discarded contigs from Stage 4 are **concatenated per sample** into a single FASTA query. **MeTarEnz** performs targeted homology search against the **PET_DB** (curated plastic-degrading enzyme sequences). Candidate plastizyme sequences are extracted from the MeTarEnz screening table.
+This is the core stage. Every bin and every unbinned/discarded contig from Stage 4 — not Stage 5's dereplicated, high-quality subset — are **concatenated per sample** into a single FASTA query. A bin dRep dereplicates away, or CheckM2 scores below threshold, is still a genuine assembled sequence and may carry a plastizyme, so nothing from Stage 4 is left out of the search. **MeTarEnz** performs targeted homology search against the **PET_DB** (curated plastic-degrading enzyme sequences). Candidate plastizyme sequences are extracted from the MeTarEnz screening table.
 
 ### Stage 8 — 3D Structure Prediction & Validation *(skippable)*
 Candidate sequences undergo:

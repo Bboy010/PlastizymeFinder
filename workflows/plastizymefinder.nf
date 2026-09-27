@@ -124,10 +124,17 @@ workflow PLASTIZYMEFINDER {
     def ch_versions = channel.empty()
 
     // Chained entry point (--contigs_input): stages 1-4 already ran in another
-    // pipeline and there are no reads to profile, so stage 2 is forced off
-    // before PREPARE_DATABASES decides what to download.
+    // pipeline (typically nf-core/mag) and there are no reads to profile, so
+    // stage 2 is forced off before PREPARE_DATABASES decides what to
+    // download. Stage 6 (bin annotation/taxonomy) is forced off too: this
+    // entry point is the pipeline's narrow "plastizyme prediction" identity -
+    // mag for assembly/binning, this for screening + structure - and stage 6
+    // is out of that scope. Override with --skip_annotation false through a
+    // profile or -params-file, not the command line: since Nextflow 25 a CLI
+    // "false" arrives as the truthy String "false".
     if (params.contigs_input) {
-        params.skip_taxonomy = true
+        params.skip_taxonomy   = true
+        params.skip_annotation = true
     }
 
     // -----------------------------------------------------------------------
@@ -244,41 +251,34 @@ workflow PLASTIZYMEFINDER {
 
     // -----------------------------------------------------------------------
     // Stage 5 — Bin Quality Evaluation
-    // QUAST per bin + dRep deduplication/filtering
-    // -----------------------------------------------------------------------
-    BIN_QC(ch_bins, ch_checkm2_db)
-
-    def ch_hq_bins  = BIN_QC.out.passed_bins
-    ch_versions = ch_versions.mix(BIN_QC.out.versions)
-
-    // dRep dereplicates across all samples, under one 'all_samples' meta.
-    // Stage 7 screens per sample, so give each HQ bin back its sample: bin
-    // file names are unique across samples (they carry the sample ID) and
-    // dRep keeps them. Without this, stage 7's join by sample never matches
-    // and the HQ bins are screened as a separate pool, their hits detached
-    // from the sample they came from.
-    def ch_bin_sample = ch_bins
-        .flatMap { meta, bins -> (bins instanceof List ? bins : [ bins ]).collect { b -> [ b.name, meta ] } }
-    def ch_hq_bins_per_sample = ch_hq_bins
-        .flatMap { _meta, bins -> (bins instanceof List ? bins : [ bins ]).collect { b -> [ b.name, b ] } }
-        .join(ch_bin_sample, by: 0)
-        .map { _name, bin, meta -> [ meta, bin ] }
-        .groupTuple(by: 0)
-
-    // -----------------------------------------------------------------------
+    // QUAST per bin + dRep deduplication/filtering. Feeds Stage 6 only: per
+    // the published method's own schema, Stage 7 screens every bin straight
+    // from Stage 4 (see below) - dRep decides what is worth annotating and
+    // classifying, not what gets screened for plastizymes. So Stage 5 has no
+    // reason to run when Stage 6 doesn't: skipped together, gated on the same
+    // flag. That also means --skip_annotation (forced true for the chained
+    // entry point, see above) needs no CheckM2 database at all.
+    //
     // Stage 6 — Bin Taxonomic Classification & Gene Annotation
     // Prokka → CD-Hit → GTDB-tk + (eggNOG | dbCAN2 | kofamscan in parallel)
     // -----------------------------------------------------------------------
+    def ch_bin_quast       = channel.empty()  // → MultiQC
+    def ch_bin_drep_tables = channel.empty()  // → PLOT_REPORT
     def ch_proteins
     if (!params.skip_annotation) {
+        BIN_QC(ch_bins, ch_checkm2_db)
+        ch_bin_quast       = BIN_QC.out.quast_stats
+        ch_bin_drep_tables = BIN_QC.out.drep_tables
+        ch_versions        = ch_versions.mix(BIN_QC.out.versions)
+
         BIN_CLASSIFICATION(
-            ch_hq_bins,
+            BIN_QC.out.passed_bins,
             ch_gtdbtk_db,
             ch_eggnog_db,
             ch_dbcan2_db,
             ch_kofamscan_db
         )
-        ch_proteins = BIN_CLASSIFICATION.out.proteins   // clustered proteins for Stage 7
+        ch_proteins = BIN_CLASSIFICATION.out.proteins   // clustered proteins - unused downstream, kept for parity with the Prodigal fallback below
         ch_versions = ch_versions.mix(BIN_CLASSIFICATION.out.versions)
     } else {
         // If annotation is skipped, extract proteins from Prodigal output
@@ -287,12 +287,14 @@ workflow PLASTIZYMEFINDER {
 
     // -----------------------------------------------------------------------
     // Stage 7 — Targeted Plastizyme Prediction
-    // Input: HQ bins + unbinned contigs (combined per sample) + PET_DB → MeTarENZ
+    // Input: every bin from Stage 4 (not Stage 5's filtered/dereplicated set)
+    // + unbinned contigs (combined per sample) + PET_DB → MeTarEnz. See the
+    // design note in plastizyme_prediction.nf for why Stage 5 is bypassed.
     // -----------------------------------------------------------------------
     def ch_candidates = channel.empty()
     if (!params.skip_plastizyme) {
         PLASTIZYME_PREDICTION(
-            ch_hq_bins_per_sample,
+            ch_bins,
             ch_unbinned,
             ch_pet_db,
             params.metarenz_mode
@@ -345,7 +347,7 @@ workflow PLASTIZYMEFINDER {
         .mix(ch_kraken2_report.map { _meta, f -> f })
         .mix(ch_metaphlan_profile.map { _meta, f -> f })
         .mix(ch_assembly_quast.map { _meta, f -> f })
-        .mix(BIN_QC.out.quast_stats.map { _meta, f -> f })
+        .mix(ch_bin_quast.map { _meta, f -> f })
         .mix(ch_collated_versions)
 
     def ch_multiqc_config = params.multiqc_config
@@ -371,7 +373,7 @@ workflow PLASTIZYMEFINDER {
             ch_kraken2_report.ifEmpty { [[id: 'all_samples'], []] },
             ch_metaphlan_profile.map { _meta, f -> f }.ifEmpty([]),
             ch_assembly_quast.map { _meta, f -> f }.ifEmpty([]),
-            BIN_QC.out.drep_tables.map { _meta, f -> f }.ifEmpty([]),
+            ch_bin_drep_tables.map { _meta, f -> f }.ifEmpty([]),
             ch_fastp_json.map { _meta, f -> f }.ifEmpty([])
         )
         ch_versions = ch_versions.mix(PLOT_REPORT.out.versions)
