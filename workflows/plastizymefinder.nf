@@ -164,7 +164,6 @@ workflow PLASTIZYMEFINDER {
     def ch_kraken2_report    = channel.empty()
     def ch_metaphlan_profile = channel.empty()
     def ch_assembly_quast    = channel.empty()
-    def ch_prodigal_proteins = channel.empty()
 
     def ch_bins                // [ meta, [ bin1.fa, bin2.fa, ... ] ] per sample
     def ch_unbinned            // [ meta, unbinned.fa ]
@@ -235,7 +234,6 @@ workflow PLASTIZYMEFINDER {
         ASSEMBLY_ANNOTATION(ch_clean_reads)
 
         ch_assembly_quast    = ASSEMBLY_ANNOTATION.out.quast
-        ch_prodigal_proteins = ASSEMBLY_ANNOTATION.out.proteins
         ch_versions          = ch_versions.mix(ASSEMBLY_ANNOTATION.out.versions)
 
         // -------------------------------------------------------------------
@@ -264,7 +262,6 @@ workflow PLASTIZYMEFINDER {
     // -----------------------------------------------------------------------
     def ch_bin_quast       = channel.empty()  // → MultiQC
     def ch_bin_drep_tables = channel.empty()  // → PLOT_REPORT
-    def ch_proteins
     if (!params.skip_annotation) {
         BIN_QC(ch_bins, ch_checkm2_db)
         ch_bin_quast       = BIN_QC.out.quast_stats
@@ -278,11 +275,7 @@ workflow PLASTIZYMEFINDER {
             ch_dbcan2_db,
             ch_kofamscan_db
         )
-        ch_proteins = BIN_CLASSIFICATION.out.proteins   // clustered proteins - unused downstream, kept for parity with the Prodigal fallback below
         ch_versions = ch_versions.mix(BIN_CLASSIFICATION.out.versions)
-    } else {
-        // If annotation is skipped, extract proteins from Prodigal output
-        ch_proteins = ch_prodigal_proteins
     }
 
     // -----------------------------------------------------------------------
