@@ -142,7 +142,7 @@ machine, see [`local_databases.md`](local_databases.md).
 | Profile | Description |
 |---|---|
 | `docker`, `singularity`, `conda` | Software packaging. `conda` cannot run stage 7: MeTarEnz has no Bioconda recipe. |
-| `gpu` | Exposes host GPUs to ColabFold. Combine with an engine: `-profile gpu,docker`. |
+| `gpu` | Folds with ColabFold on the GPU: exposes the host GPUs and switches ColabFold to its authors' CUDA image (the Biocontainers one is CPU-only). Combine with an engine: `-profile docker,gpu`. About 10 min per 250-residue candidate on an RTX 2060, against ~6 h on CPU. |
 | `test` | Minimal bundled dataset; a smoke test. |
 | `test_all` | `test` with stage 8. |
 | `test_mag` | The subsampled gut metagenome nf-core/mag tests on, binned with MetaBAT2, MaxBin2 and DAS Tool. |
