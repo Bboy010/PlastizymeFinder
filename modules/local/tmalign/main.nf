@@ -35,9 +35,12 @@ process TMALIGN {
     def prefix = task.ext.prefix ?: "${meta.id}"
     // Nextflow resolves \t and \n inside this string, so the awk program below
     // is written without any backslash escapes of its own: fields are joined
-    // with OFS and each record is terminated by print's default ORS.
+    // with OFS and each record is terminated by print's default ORS. The one
+    // newline printf needs is written \\n: a real one would leave a line at
+    // column 0, which stops Nextflow stripping the script's indentation, and
+    // the END_VERSIONS terminator below is then never matched.
     """
-    printf 'query\treference\taligned_length\ttm_score_query\ttm_score_ref\trmsd\tseq_id\n' \
+    printf 'query\treference\taligned_length\ttm_score_query\ttm_score_ref\trmsd\tseq_id\\n' \
         > ${prefix}.tmalign.tsv
 
     for query_pdb in ${pdb_structures}; do
@@ -67,7 +70,7 @@ process TMALIGN {
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    printf 'query\treference\taligned_length\ttm_score_query\ttm_score_ref\trmsd\tseq_id\n' \
+    printf 'query\treference\taligned_length\ttm_score_query\ttm_score_ref\trmsd\tseq_id\\n' \
         > ${prefix}.tmalign.tsv
 
     cat <<-END_VERSIONS > versions.yml

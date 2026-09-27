@@ -51,15 +51,13 @@ process CHECKM2 {
 
     # dRep's --genomeInfo wants exactly: genome,completeness,contamination,
     # with "genome" the bin's file *name* (not path) including its extension.
-    python3 -c "
-import csv
-with open('checkm2_out/quality_report.tsv') as fh, open('${prefix}.genome_info.csv', 'w', newline='') as out:
-    reader = csv.DictReader(fh, delimiter='\t')
-    writer = csv.writer(out)
-    writer.writerow(['genome', 'completeness', 'contamination'])
-    for row in reader:
-        writer.writerow([row['Name'] + '.fa', row['Completeness'], row['Contamination']])
-"
+    # Columns are found by name. awk, not a Python block: a script line at
+    # column 0 stops Nextflow stripping the indentation, and the END_VERSIONS
+    # terminator below is then never matched.
+    awk -F '\t' '
+        NR == 1 { for (i = 1; i <= NF; i++) col[\$i] = i; print "genome,completeness,contamination"; next }
+        { print \$col["Name"] ".fa," \$col["Completeness"] "," \$col["Contamination"] }
+    ' checkm2_out/quality_report.tsv > ${prefix}.genome_info.csv
     cp checkm2_out/quality_report.tsv ${prefix}.quality_report.tsv
 
     cat <<-END_VERSIONS > versions.yml

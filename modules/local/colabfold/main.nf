@@ -90,10 +90,12 @@ process COLABFOLD {
         done
 
         # Per-residue confidence, so a reader can tell a folded domain from a
-        # disordered tail without opening the structure. Kept on one line: a
-        # line at column 0 here stops Nextflow from stripping the script's
-        # indentation, and the END_VERSIONS terminator below is then missed.
-        printf 'model\tmean_plddt\n' > ${prefix}.plddt.tsv
+        # disordered tail without opening the structure. The Python is kept on
+        # one line and printf's newline is escaped twice in the module source:
+        # any line at column 0 - a Python block, or a real newline - stops
+        # Nextflow stripping the script's indentation, and the END_VERSIONS
+        # terminator is then missed.
+        printf 'model\tmean_plddt\\n' > ${prefix}.plddt.tsv
         for json in raw/*rank_001*.json; do
             "\$py" -c "import json, sys, os; s = json.load(open(sys.argv[1])).get('plddt') or []; print('%s\t%.2f' % (os.path.basename(sys.argv[1]), sum(s) / len(s) if s else 0))" "\${json}" >> ${prefix}.plddt.tsv
         done
@@ -111,7 +113,7 @@ process COLABFOLD {
     mkdir -p raw
     touch raw/${prefix}_unrelaxed_rank_001_model.pdb
     touch ${prefix}.colabfold.pdb
-    printf 'model\tmean_plddt\n' > ${prefix}.plddt.tsv
+    printf 'model\tmean_plddt\\n' > ${prefix}.plddt.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
