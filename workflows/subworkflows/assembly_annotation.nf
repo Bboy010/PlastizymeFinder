@@ -67,6 +67,6 @@ workflow ASSEMBLY_ANNOTATION {
     contigs  = ch_contigs.assembled  // [ meta, contigs.fa ] → Binning
     bam      = ch_bam       // [ meta, sorted.bam ] → MetaBAT2 depth
     quast    = QUAST_ASSEMBLY.out.tsv   // [ meta, report.tsv ] → reporting
-    proteins = ch_proteins  // [ meta, proteins.faa ] → fallback for Stage 7 if annotation skipped
+    proteins = ch_proteins  // [ meta, proteins.faa ] → published under annotation/prodigal/; not consumed elsewhere in the pipeline (Stage 7 screens Stage 4's nucleotide bins directly, not proteins)
     versions = ch_versions
 }

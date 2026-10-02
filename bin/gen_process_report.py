@@ -31,7 +31,7 @@ STAGE = [
 
 IMG = re.compile(
     r"(?:quay\.io/biocontainers/|biocontainers/|docker://|community\.wave\.seqera\.io/library/"
-    r"|nf-core/|catgumag/|mforooz/|plastizymefinder/)[\w\-./]+:[\w\-.+]+")
+    r"|nf-core/|catgumag/|mforooz/|plastizymefinder/|ghcr\.io/)[\w\-./]+:[\w\-.+]+")
 
 
 def sh(cmd):
@@ -88,7 +88,7 @@ def lookup(table, name, default=None):
     if name in table:
         return table[name]
     for sel, val in table.items():
-        if '.*' in sel and re.fullmatch(sel, name):
+        if ('.*' in sel or '|' in sel) and re.fullmatch(sel, name):
             return val
     return default
 
@@ -137,8 +137,14 @@ if executed:
         w('### Stage {}\n'.format(label))
         w('| Process | Container | Resources | Output | Status |')
         w('|---|---|---|---|---|')
+        listed = set()
         for full, status in sorted(by_stage[label]):
             short = full.split(':')[-1].split(' ')[0]
+            # One row per process, not per task (a process can run once per
+            # sample, or once per sample and binner).
+            if short in listed:
+                continue
+            listed.add(short)
             m = mods.get(short, {})
             ov = lookup(override, short)
             w('| `{}`{} | `{}`{} | {} | `{}` | {} |'.format(

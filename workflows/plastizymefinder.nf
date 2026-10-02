@@ -25,10 +25,30 @@ include { STRUCTURE_PREDICTION   } from '../workflows/subworkflows/structure_pre
 include { MULTIQC     } from '../modules/nf-core/multiqc/main'
 include { PLOT_REPORT } from '../modules/local/plotreport/main'
 include { METARENZ    } from '../modules/local/metarenz/main'
+include { GUNZIP_BINS      } from '../modules/local/gunzip_bins/main'
+include { EXTRACT_UNBINNED } from '../modules/local/extract_unbinned/main'
 
 // -----------------------------------------------------------------------
 // HELPER FUNCTIONS
 // -----------------------------------------------------------------------
+
+// One row of --contigs_input: sample,contigs[,bins]. `bins` is a directory
+// (every *.fa, *.fasta, *.fna in it, gzipped or not) or a glob.
+def parse_contigs_row(LinkedHashMap row) {
+    if (!row.sample)  error "ERROR in --contigs_input: 'sample' is missing in row ${row}"
+    if (!row.contigs) error "ERROR in --contigs_input: 'contigs' is missing for sample ${row.sample}"
+
+    def contigs = file(row.contigs, checkIfExists: true)
+    def bins    = []
+    if (row.bins) {
+        def pattern = row.bins.contains('*') || !file(row.bins).isDirectory()
+            ? row.bins
+            : "${row.bins.replaceAll('/+$', '')}/*.{fa,fasta,fna,fa.gz,fasta.gz,fna.gz}"
+        bins = files(pattern)
+        if (!bins) error "ERROR in --contigs_input: no bin FASTA found at '${row.bins}' for sample ${row.sample}"
+    }
+    return [ [id: row.sample], contigs, bins ]
+}
 
 def validate_samplesheet(LinkedHashMap row) {
     def meta   = [id: row.sample]
@@ -103,13 +123,19 @@ workflow PLASTIZYMEFINDER {
 
     def ch_versions = channel.empty()
 
-    // -----------------------------------------------------------------------
-    // 0. Parse samplesheet → channel of [ meta, [reads] ]
-    // -----------------------------------------------------------------------
-    def ch_reads = channel
-        .fromPath(params.input)
-        .splitCsv(header: true, sep: ',', strip: true)
-        .map { row -> validate_samplesheet(row) }
+    // Chained entry point (--contigs_input): stages 1-4 already ran in another
+    // pipeline (typically nf-core/mag) and there are no reads to profile, so
+    // stage 2 is forced off before PREPARE_DATABASES decides what to
+    // download. Stage 6 (bin annotation/taxonomy) is forced off too: this
+    // entry point is the pipeline's narrow "plastizyme prediction" identity -
+    // mag for assembly/binning, this for screening + structure - and stage 6
+    // is out of that scope. Override with --skip_annotation false through a
+    // profile or -params-file, not the command line: since Nextflow 25 a CLI
+    // "false" arrives as the truthy String "false".
+    if (params.contigs_input) {
+        params.skip_taxonomy   = true
+        params.skip_annotation = true
+    }
 
     // -----------------------------------------------------------------------
     // 0. Resolve all databases (user-provided paths OR auto-download)
@@ -125,94 +151,143 @@ workflow PLASTIZYMEFINDER {
     def ch_petase_ref    = PREPARE_DATABASES.out.petase_ref  // 6EQE or user-provided PDB
     def ch_cdd_db        = PREPARE_DATABASES.out.cdd_db      // CDD profiles for RPS-BLAST
     def ch_checkm2_db    = PREPARE_DATABASES.out.checkm2_db  // dRep --genomeInfo quality model
-    def ch_pet_db        = channel.fromPath(params.pet_db)
+    // A value channel, not fromPath: a queue channel holds the database once,
+    // so METARENZ would consume it on the first sample and never run again.
+    def ch_pet_db        = channel.value(file(params.pet_db, checkIfExists: true))
 
     ch_versions = ch_versions.mix(PREPARE_DATABASES.out.versions)
 
-    // -----------------------------------------------------------------------
-    // Stage 1 — QC & Preprocessing
-    // FastQC (raw) → fastp → Bowtie2 (PhiX/host removal) → FastQC (trimmed)
-    // -----------------------------------------------------------------------
-    QC_PREPROCESSING(ch_reads)
-
-    def ch_clean_reads   = QC_PREPROCESSING.out.reads
-    def ch_qc_reports    = QC_PREPROCESSING.out.reports
-    ch_versions      = ch_versions.mix(QC_PREPROCESSING.out.versions)
-
-    // -----------------------------------------------------------------------
-    // Stage 2 — Taxonomic Profiling (runs in parallel with assembly)
-    // Kraken2/Krona + MetaPhlAn4
-    // -----------------------------------------------------------------------
+    // Reports of stages 1-3. They stay empty on the chained entry point,
+    // where those stages ran elsewhere.
+    def ch_qc_reports        = channel.empty()
+    def ch_fastp_json        = channel.empty()
     def ch_kraken2_report    = channel.empty()
     def ch_metaphlan_profile = channel.empty()
-    if (!params.skip_taxonomy) {
-        TAXONOMIC_PROFILING(
-            ch_clean_reads,
-            ch_kraken2_db,
-            ch_metaphlan4_db
+    def ch_assembly_quast    = channel.empty()
+
+    def ch_bins                // [ meta, [ bin1.fa, bin2.fa, ... ] ] per sample
+    def ch_unbinned            // [ meta, unbinned.fa ]
+
+    if (params.contigs_input) {
+        // -------------------------------------------------------------------
+        // Chained entry point — assemblies and bins from another pipeline
+        // (nf-core/mag: Assembly/<assembler>/ and GenomeBinning/<binner>/bins/).
+        // Stage 5 re-applies the study's CheckM2 + dRep thresholds to those
+        // bins, and contigs no bin claimed are screened as unbinned.
+        // -------------------------------------------------------------------
+        def ch_assemblies = channel
+            .fromPath(params.contigs_input)
+            .splitCsv(header: true, sep: ',', strip: true)
+            .map { row -> parse_contigs_row(row) }
+
+        // Bins are gunzipped under a .fa name: CheckM2 and dRep read no other.
+        GUNZIP_BINS(
+            ch_assemblies
+                .filter { _meta, _contigs, bins -> bins.size() > 0 }
+                .map { meta, _contigs, bins -> [ meta, bins ] }
         )
-        ch_kraken2_report    = TAXONOMIC_PROFILING.out.kraken2_report
-        ch_metaphlan_profile = TAXONOMIC_PROFILING.out.metaphlan4_profile
-        ch_versions          = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
+        ch_bins     = GUNZIP_BINS.out.bins
+        ch_versions = ch_versions.mix(GUNZIP_BINS.out.versions.first())
+
+        EXTRACT_UNBINNED(ch_assemblies)
+        ch_unbinned = EXTRACT_UNBINNED.out.unbinned
+        ch_versions = ch_versions.mix(EXTRACT_UNBINNED.out.versions.first())
+    } else {
+        // -------------------------------------------------------------------
+        // 0. Parse samplesheet → channel of [ meta, [reads] ]
+        // -------------------------------------------------------------------
+        def ch_reads = channel
+            .fromPath(params.input)
+            .splitCsv(header: true, sep: ',', strip: true)
+            .map { row -> validate_samplesheet(row) }
+
+        // -------------------------------------------------------------------
+        // Stage 1 — QC & Preprocessing
+        // FastQC (raw) → fastp → Bowtie2 (PhiX/host removal) → FastQC (trimmed)
+        // -------------------------------------------------------------------
+        QC_PREPROCESSING(ch_reads)
+
+        def ch_clean_reads = QC_PREPROCESSING.out.reads
+        ch_qc_reports      = QC_PREPROCESSING.out.reports
+        ch_fastp_json      = QC_PREPROCESSING.out.fastp_json
+        ch_versions        = ch_versions.mix(QC_PREPROCESSING.out.versions)
+
+        // -------------------------------------------------------------------
+        // Stage 2 — Taxonomic Profiling (runs in parallel with assembly)
+        // Kraken2/Krona + MetaPhlAn4
+        // -------------------------------------------------------------------
+        if (!params.skip_taxonomy) {
+            TAXONOMIC_PROFILING(
+                ch_clean_reads,
+                ch_kraken2_db,
+                ch_metaphlan4_db
+            )
+            ch_kraken2_report    = TAXONOMIC_PROFILING.out.kraken2_report
+            ch_metaphlan_profile = TAXONOMIC_PROFILING.out.metaphlan4_profile
+            ch_versions          = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
+        }
+
+        // -------------------------------------------------------------------
+        // Stage 3 — De Novo Assembly, Contig Evaluation & Annotation
+        // MEGAHIT → QUAST → Prodigal → Bowtie2 (coverage)
+        // -------------------------------------------------------------------
+        ASSEMBLY_ANNOTATION(ch_clean_reads)
+
+        ch_assembly_quast    = ASSEMBLY_ANNOTATION.out.quast
+        ch_versions          = ch_versions.mix(ASSEMBLY_ANNOTATION.out.versions)
+
+        // -------------------------------------------------------------------
+        // Stage 4 — Contig Binning
+        // MetaBAT2 + MaxBin2 + CONCOCT → DAS Tool → bins + unbinned
+        // -------------------------------------------------------------------
+        BINNING(ASSEMBLY_ANNOTATION.out.contigs, ASSEMBLY_ANNOTATION.out.bam)
+
+        ch_bins     = BINNING.out.bins
+        ch_unbinned = BINNING.out.unbinned
+        ch_versions = ch_versions.mix(BINNING.out.versions)
     }
 
     // -----------------------------------------------------------------------
-    // Stage 3 — De Novo Assembly, Contig Evaluation & Annotation
-    // MEGAHIT → QUAST → Prodigal → Bowtie2 (coverage)
-    // -----------------------------------------------------------------------
-    ASSEMBLY_ANNOTATION(ch_clean_reads)
-
-    def ch_contigs  = ASSEMBLY_ANNOTATION.out.contigs
-    def ch_bam      = ASSEMBLY_ANNOTATION.out.bam        // coverage BAMs for MetaBAT2
-    ch_versions = ch_versions.mix(ASSEMBLY_ANNOTATION.out.versions)
-
-    // -----------------------------------------------------------------------
-    // Stage 4 — Contig Binning
-    // MetaBAT2 → bins + unbinned
-    // -----------------------------------------------------------------------
-    BINNING(ch_contigs, ch_bam)
-
-    def ch_bins     = BINNING.out.bins       // [ meta, path/to/bin/*.fa ] per sample
-    def ch_unbinned = BINNING.out.unbinned   // [ meta, unbinned.fa ]
-    ch_versions = ch_versions.mix(BINNING.out.versions)
-
-    // -----------------------------------------------------------------------
     // Stage 5 — Bin Quality Evaluation
-    // QUAST per bin + dRep deduplication/filtering
-    // -----------------------------------------------------------------------
-    BIN_QC(ch_bins, ch_checkm2_db)
-
-    def ch_hq_bins  = BIN_QC.out.passed_bins
-    ch_versions = ch_versions.mix(BIN_QC.out.versions)
-
-    // -----------------------------------------------------------------------
+    // QUAST per bin + dRep deduplication/filtering. Feeds Stage 6 only: per
+    // the published method's own schema, Stage 7 screens every bin straight
+    // from Stage 4 (see below) - dRep decides what is worth annotating and
+    // classifying, not what gets screened for plastizymes. So Stage 5 has no
+    // reason to run when Stage 6 doesn't: skipped together, gated on the same
+    // flag. That also means --skip_annotation (forced true for the chained
+    // entry point, see above) needs no CheckM2 database at all.
+    //
     // Stage 6 — Bin Taxonomic Classification & Gene Annotation
     // Prokka → CD-Hit → GTDB-tk + (eggNOG | dbCAN2 | kofamscan in parallel)
     // -----------------------------------------------------------------------
-    def ch_proteins
+    def ch_bin_quast       = channel.empty()  // → MultiQC
+    def ch_bin_drep_tables = channel.empty()  // → PLOT_REPORT
     if (!params.skip_annotation) {
+        BIN_QC(ch_bins, ch_checkm2_db)
+        ch_bin_quast       = BIN_QC.out.quast_stats
+        ch_bin_drep_tables = BIN_QC.out.drep_tables
+        ch_versions        = ch_versions.mix(BIN_QC.out.versions)
+
         BIN_CLASSIFICATION(
-            ch_hq_bins,
+            BIN_QC.out.passed_bins,
             ch_gtdbtk_db,
             ch_eggnog_db,
             ch_dbcan2_db,
             ch_kofamscan_db
         )
-        ch_proteins = BIN_CLASSIFICATION.out.proteins   // clustered proteins for Stage 7
         ch_versions = ch_versions.mix(BIN_CLASSIFICATION.out.versions)
-    } else {
-        // If annotation is skipped, extract proteins from Prodigal output
-        ch_proteins = ASSEMBLY_ANNOTATION.out.proteins
     }
 
     // -----------------------------------------------------------------------
     // Stage 7 — Targeted Plastizyme Prediction
-    // Input: HQ bins + unbinned contigs (combined per sample) + PET_DB → MeTarENZ
+    // Input: every bin from Stage 4 (not Stage 5's filtered/dereplicated set)
+    // + unbinned contigs (combined per sample) + PET_DB → MeTarEnz. See the
+    // design note in plastizyme_prediction.nf for why Stage 5 is bypassed.
     // -----------------------------------------------------------------------
     def ch_candidates = channel.empty()
     if (!params.skip_plastizyme) {
         PLASTIZYME_PREDICTION(
-            ch_hq_bins,
+            ch_bins,
             ch_unbinned,
             ch_pet_db,
             params.metarenz_mode
@@ -239,9 +314,22 @@ workflow PLASTIZYMEFINDER {
     // Software versions — every module emits a versions.yml; collate them into
     // a single file so the run is reproducible and MultiQC can report it.
     // -----------------------------------------------------------------------
+    // Modules taken from nf-core/modules since 2026 (MaxBin2, CONCOCT, DAS Tool,
+    // samtools, gunzip) publish their version on the 'versions' topic instead
+    // of a versions.yml file; render those entries in the same YAML layout.
+    def ch_topic_versions = channel.topic('versions')
+        .unique()
+        .map { process, tool, version -> "\"${process}\":\n    ${tool}: ${version}\n".toString() }
+
+    // Read as text so both kinds sort together (collectFile cannot compare a
+    // file with a string). The *_mqc_versions.yml name makes MultiQC render it
+    // as its Software Versions section - and gives MultiQC something to report
+    // on the chained entry point, where no stage 1-3 report exists.
     def ch_collated_versions = ch_versions
         .unique()
-        .collectFile(name: 'software_versions.yml', sort: true)
+        .map { f -> f.text }
+        .mix(ch_topic_versions)
+        .collectFile(name: 'software_mqc_versions.yml', sort: true)
 
     // -----------------------------------------------------------------------
     // MultiQC — aggregate the reports of every stage, not just the QC one.
@@ -251,8 +339,8 @@ workflow PLASTIZYMEFINDER {
         .mix(ch_qc_reports.map { _meta, files -> files })
         .mix(ch_kraken2_report.map { _meta, f -> f })
         .mix(ch_metaphlan_profile.map { _meta, f -> f })
-        .mix(ASSEMBLY_ANNOTATION.out.quast.map { _meta, f -> f })
-        .mix(BIN_QC.out.quast_stats.map { _meta, f -> f })
+        .mix(ch_assembly_quast.map { _meta, f -> f })
+        .mix(ch_bin_quast.map { _meta, f -> f })
         .mix(ch_collated_versions)
 
     def ch_multiqc_config = params.multiqc_config
@@ -269,14 +357,18 @@ workflow PLASTIZYMEFINDER {
     // -----------------------------------------------------------------------
     // Figures — taxonomy, assembly, bins and read QC, rendered from the raw
     // reports each tool wrote. Every input is optional: a skipped stage simply
-    // drops the figures that depend on it.
+    // drops the figures that depend on it. On the chained entry point the
+    // reports of stages 1-3 live in the upstream pipeline's results, and the
+    // script exits non-zero when it finds nothing to plot, so it is not run.
     // -----------------------------------------------------------------------
-    PLOT_REPORT(
-        ch_kraken2_report.ifEmpty { [[id: 'all_samples'], []] },
-        ch_metaphlan_profile.map { _meta, f -> f }.ifEmpty([]),
-        ASSEMBLY_ANNOTATION.out.quast.map { _meta, f -> f }.ifEmpty([]),
-        BIN_QC.out.drep_tables.map { _meta, f -> f }.ifEmpty([]),
-        QC_PREPROCESSING.out.fastp_json.map { _meta, f -> f }.ifEmpty([])
-    )
-    ch_versions = ch_versions.mix(PLOT_REPORT.out.versions)
+    if (!params.contigs_input) {
+        PLOT_REPORT(
+            ch_kraken2_report.ifEmpty { [[id: 'all_samples'], []] },
+            ch_metaphlan_profile.map { _meta, f -> f }.ifEmpty([]),
+            ch_assembly_quast.map { _meta, f -> f }.ifEmpty([]),
+            ch_bin_drep_tables.map { _meta, f -> f }.ifEmpty([]),
+            ch_fastp_json.map { _meta, f -> f }.ifEmpty([])
+        )
+        ch_versions = ch_versions.mix(PLOT_REPORT.out.versions)
+    }
 }

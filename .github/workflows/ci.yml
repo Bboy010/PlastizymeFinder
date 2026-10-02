@@ -51,10 +51,32 @@ jobs:
           test -s "${TRACE}" || { echo "trace missing"; exit 1; }
           for stage in QC_PREPROCESSING TAXONOMIC_PROFILING ASSEMBLY_ANNOTATION \
                        BINNING BIN_QC BIN_CLASSIFICATION PLASTIZYME_PREDICTION \
-                       STRUCTURE_PREDICTION MULTIQC; do
+                       STRUCTURE_PREDICTION MULTIQC \
+                       METABAT2 MAXBIN2 CONCOCT_EXTRACTFASTABINS DASTOOL_DASTOOL \
+                       EXTRACT_UNBINNED; do
             grep -q "${stage}" "${TRACE}" || { echo "stage ${stage} did not run"; exit 1; }
           done
           echo "$(grep -c COMPLETED "${TRACE}") processes completed"
+
+  stub_chained:
+    name: Chained after nf-core/mag (stub)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "26.04.6"
+
+      # --contigs_input on nf-core/mag's own test assemblies. A stub run still
+      # stages the inputs, so this also checks the URLs are alive.
+      - name: Stages 5-8 from assemblies
+        run: |
+          nextflow run . -profile test_chain_mag -stub-run \
+            --outdir results -w work
+          grep -q EXTRACT_UNBINNED results/pipeline_info/execution_trace.txt
+          test "$(grep -c 'METARENZ.*COMPLETED' results/pipeline_info/execution_trace.txt)" -eq 2 \
+            || { echo "METARENZ did not screen both samples"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -76,16 +98,6 @@ jobs:
       - uses: nf-core/setup-nf-test@v1
         with:
           version: "0.9.4"
-
-      # Build the MeTarEnz image locally under the same tag the module pulls.
-      # Docker then resolves it without touching the registry, so the tests stay
-      # self-contained and keep working on forks and pull requests, where the
-      # GHCR package may be absent or private. It also checks the Dockerfile
-      # still builds - its base is Debian 10, served from archive.debian.org.
-      - name: Build the MeTarEnz runtime image
-        run: |
-          docker build -t "ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/plastizymefinder-metarenz:1.0" \
-              containers/metarenz
 
       # TMALIGN and RPSBLAST pull public Biocontainers images. Everything runs
       # against the test data shipped in the repository.

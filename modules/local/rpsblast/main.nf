@@ -43,7 +43,11 @@ process RPSBLAST {
         DB_PREFIX=Cdd
     fi
 
-    printf '${header}\n' > ${prefix}.cdsearch.tsv
+    # printf's newline is escaped twice in the module source: escaped once,
+    # Nextflow would write a real newline here, leaving a line at column 0 that
+    # stops it stripping the script's indentation - and the END_VERSIONS
+    # terminator below would never be matched.
+    printf '${header}\\n' > ${prefix}.cdsearch.tsv
 
     # An empty candidate FASTA is a legitimate outcome upstream, not an error:
     # emit a header-only table so the channel contract still holds.
@@ -69,7 +73,7 @@ process RPSBLAST {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def header = 'qseqid\tsseqid\tpident\tlength\tmismatch\tgapopen\tqstart\tqend\tsstart\tsend\tevalue\tbitscore\tstitle'
     """
-    printf '${header}\n' > ${prefix}.cdsearch.tsv
+    printf '${header}\\n' > ${prefix}.cdsearch.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
