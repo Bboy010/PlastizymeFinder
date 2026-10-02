@@ -39,7 +39,7 @@ The pipeline was developed as part of the **March 2026 nf-core Hackathon**.
 ---
 
 ## Pipeline overview
-<img width="1188" height="1138" alt="diagramme d&#39;etude metagenomique" src="https://github.com/user-attachments/assets/43ad3675-e42e-4f40-af94-893884fa31bb" />
+![PlastizymeFinder full pipeline: stages 1 to 8, from raw reads to a scored 3D structure](docs/images/plastizymefinder-full-pipeline.png)
 
 ```
 Raw FASTQ reads
@@ -224,9 +224,9 @@ Stages 1–4 (read QC, assembly, binning) cover the same ground as
 [nf-core/mag](https://nf-co.re/mag), which is what the published study ran for
 them. If you already use mag, or want its assemblers and binners, run it first
 and hand its assemblies and bins to PlastizymeFinder with `--contigs_input`.
-Stages 1–4 are then skipped; stage 5 re-applies this pipeline's CheckM2 + dRep
-thresholds to mag's bins, and every contig no bin claimed is screened as
-unbinned, so nothing is left out of stage 7.
+Stages 1–6 are then skipped (stage 6, bin annotation and taxonomy, is outside what this entry point is for), and stage 7 screens every bin plus every contig no bin claimed, so nothing is left out.
+
+![PlastizymeFinder chained after nf-core/mag: mag's bins and unbinned contigs go through MeTarEnz, conserved-domain search, ColabFold and TM-align](docs/images/plastizymefinder-from-nfcore-mag.png)
 
 ```bash
 # 1. nf-core/mag, as usual
@@ -237,7 +237,7 @@ nextflow run nf-core/mag -r 5.5.0 -profile docker \
 #    MaxBin2, ... for another binner, --binner none for contigs only)
 bin/mag2plastizyme.py --mag_outdir results_mag --assembler MEGAHIT > contigs_input.csv
 
-# 3. PlastizymeFinder, stages 5-8
+# 3. PlastizymeFinder, stages 7-8
 nextflow run Bboy010/PlastizymeFinder -profile docker \
     --contigs_input contigs_input.csv \
     --pet_db /path/to/pet_db.fasta \
@@ -372,7 +372,7 @@ Every database above can also point at one already on your machine — see
 | `test` | Minimal bundled dataset, resource-capped — a smoke test, not a reproduction. |
 | `test_real` | The two published samples subsampled to 100k read pairs each. |
 | `test_mag` | The subsampled gut metagenome nf-core/mag tests on, with the same binners as its `-profile test` (MetaBAT2, MaxBin2, DAS Tool; CONCOCT skipped). Checks stage 4 on real reads. |
-| `test_chain_mag` | `--contigs_input` on nf-core/mag's test assemblies: the chained entry point, stages 5–8. |
+| `test_chain_mag` | `--contigs_input` on nf-core/mag's test assemblies: the chained entry point, stages 7–8. |
 | `local_dbs` | Points every database at a copy already on the machine, so nothing downloads. Combine it *after* another profile: `-profile test_real,local_dbs,docker`. See [`docs/local_databases.md`](docs/local_databases.md). |
 
 ### Resource limits

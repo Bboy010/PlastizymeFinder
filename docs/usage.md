@@ -9,7 +9,7 @@ has three entry points; choose the one that matches what you already have:
 | You have | Entry point | Stages run |
 |---|---|---|
 | Raw reads (FASTQ) | `--input` | 1–8: QC, taxonomy, assembly, binning, bin QC, annotation, screening, structure |
-| Assemblies, and optionally bins, from another pipeline (e.g. nf-core/mag) | `--contigs_input` | 5–8 (5 only if bins are given) |
+| Assemblies, and optionally bins, from another pipeline (e.g. nf-core/mag) | `--contigs_input` | 7–8 (stage 5 only with `--skip_annotation false`) |
 | Candidate sequences (proteins or contigs) | `--candidates_fasta` | 7–8 |
 
 Provide exactly one. Every entry point also needs `--pet_db`, the curated

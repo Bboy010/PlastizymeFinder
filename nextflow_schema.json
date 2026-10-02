@@ -26,7 +26,7 @@
                     "type": "string",
                     "format": "file-path",
                     "description": "Samplesheet of assemblies (and optionally bins) produced by another pipeline, typically nf-core/mag. Skips stages 1-4. Replaces --input.",
-                    "help_text": "CSV with columns sample,contigs,bins. `contigs` is an assembly FASTA (gzipped or not); `bins` is optional, a directory or a glob of bin FASTAs. Bins go through stage 5 (CheckM2 + dRep with this pipeline's thresholds); contigs no bin claimed are screened as unbinned; without bins every contig is screened. bin/mag2plastizyme.py writes this sheet from an nf-core/mag results directory.",
+                    "help_text": "CSV with columns sample,contigs,bins. `contigs` is an assembly FASTA (gzipped or not); `bins` is optional, a directory or a glob of bin FASTAs. Every bin and every contig no bin claimed is screened in stage 7 (stages 1-6 are skipped; stage 5 only runs with `--skip_annotation false`); without bins every contig is screened. bin/mag2plastizyme.py writes this sheet from an nf-core/mag results directory.",
                     "fa_icon": "fas fa-link"
                 },
                 "candidates_fasta": {

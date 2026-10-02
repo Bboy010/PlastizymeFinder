@@ -172,8 +172,8 @@ workflow PLASTIZYMEFINDER {
         // -------------------------------------------------------------------
         // Chained entry point — assemblies and bins from another pipeline
         // (nf-core/mag: Assembly/<assembler>/ and GenomeBinning/<binner>/bins/).
-        // Stage 5 re-applies the study's CheckM2 + dRep thresholds to those
-        // bins, and contigs no bin claimed are screened as unbinned.
+        // Stages 1-6 are skipped: every bin, plus every contig no bin claimed,
+        // is screened in stage 7. Stage 5 only runs with --skip_annotation false.
         // -------------------------------------------------------------------
         def ch_assemblies = channel
             .fromPath(params.contigs_input)
