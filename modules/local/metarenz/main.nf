@@ -3,20 +3,15 @@ process METARENZ {
     label 'process_medium'
 
     // MeTarEnz is a published third-party tool (Foroozandeh Shahraki et al.,
-    // Nat. Prod. Bioprospect. 2024, doi:10.1007/s13659-023-00426-8), distributed
-    // only as a Docker image by its authors — there is no Bioconda recipe, so
-    // this module cannot run under -profile conda.
-    //
-    // The image below is the upstream one plus procps. It cannot be used as
-    // published: Nextflow's task wrapper exits with "Command 'ps' required by
-    // nextflow to collect task metrics cannot be found" whenever trace, report
-    // or timeline is on. See containers/metarenz/Dockerfile for the two-line
-    // recipe and the build/push instructions. Override it with:
-    //   process { withName: 'METARENZ' { container = '<your-registry>/...' } }
+    // Nat. Prod. Bioprospect. 2024, doi:10.1007/s13659-023-00426-8), released
+    // under the MIT licence and distributed as a Docker image by its authors.
+    // There is no Bioconda recipe, so this module cannot run under -profile conda.
+    // Image 1.1 (sha256:0e5b64cf...) adds procps, which Nextflow needs to collect
+    // task metrics; 1.0 is the original image without it.
     //
     // Upstream tool : https://github.com/mehdiforoozandeh/MeTarEnz
     // Upstream image: https://hub.docker.com/r/mforooz/metarenz
-    container 'ghcr.io/bboy010/plastizymefinder-metarenz:1.0'
+    container 'mforooz/metarenz:1.1'
 
     input:
     // Staged into separate directories so a query and a database that happen to

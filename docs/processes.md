@@ -86,7 +86,7 @@
 
 | Process | Container | Resources | Output | Status |
 |---|---|---|---|---|
-| `METARENZ` | `ghcr.io/bboy010/plastizymefinder-metarenz:1.0` | process_medium | `results/plastizyme_prediction/metarenz` | OK |
+| `METARENZ` | `mforooz/metarenz:1.1` | process_medium | `results/plastizyme_prediction/metarenz` | OK |
 
 ### Stage 8 - Structural validation
 
@@ -142,7 +142,7 @@
 | `METABAT2` | nf-core copy | `quay.io/biocontainers/metabat2:2.18--h6f16272_0` | `bins`, `unbinned`, `depth`, `abundance` | yes | NO | NO |
 | `METAPHLAN4` | nf-core copy | `quay.io/biocontainers/metaphlan:4.1.0--pyhca03a8a_0` | `profile`, `bowtie2out` | yes | NO | NO |
 | `METAPHLAN4_DB_DOWNLOAD` | local | `quay.io/biocontainers/metaphlan:4.1.0--pyhca03a8a_0` | `db` | yes | NO | NO |
-| `METARENZ` | local | `ghcr.io/bboy010/plastizymefinder-metarenz:1.0` | `csv`, `candidates` | yes | yes | yes |
+| `METARENZ` | local | `mforooz/metarenz:1.1` | `csv`, `candidates` | yes | yes | yes |
 | `MULTIQC` | nf-core copy | `quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0` | `report`, `data`, `plots` | yes | NO | NO |
 | `PETASE_REF_DOWNLOAD` | local | `quay.io/biocontainers/wget:1.21.4` | `pdb` | yes | NO | NO |
 | `PLOT_REPORT` | local | `quay.io/biocontainers/matplotlib:3.5.1` | `figures`, `krona_text` | yes | yes | NO |

@@ -118,7 +118,7 @@
 
 ## Stage 7 — Plastizyme prediction
 
-- [MeTarEnz](https://github.com/mehdiforoozandeh/MeTarEnz) — a published third-party tool, run unmodified from its authors' Docker image (`mforooz/metarenz`, with `procps` added so Nextflow can collect task metrics)
+- [MeTarEnz](https://github.com/mehdiforoozandeh/MeTarEnz) — a published third-party tool, run unmodified from its authors' Docker image (`mforooz/metarenz:1.1`, MIT licence)
 
   > Foroozandeh Shahraki M, *et al.* MeTarEnz: a metagenomic targeted enzyme miner. *Nat Prod Bioprospect.* 2024. [doi:10.1007/s13659-023-00426-8](https://doi.org/10.1007/s13659-023-00426-8)
 

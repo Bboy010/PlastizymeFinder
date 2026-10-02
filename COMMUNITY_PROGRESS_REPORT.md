@@ -105,7 +105,7 @@ container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity
     'quay.io/biocontainers/metatarenz:latest' }"
 ```
 
-> *Update, September 2026:* this snippet is kept as originally posted. The module now lives in `modules/local/metarenz/` and runs the authors' image `mforooz/metarenz` plus `procps` (`ghcr.io/bboy010/plastizymefinder-metarenz:1.0`). No Bioconda recipe exists yet.
+> *Update, September 2026:* this snippet is kept as originally posted. The module now lives in `modules/local/metarenz/` and runs the authors' own image `mforooz/metarenz:1.1`, which now includes `procps` and is released under the MIT licence. No Bioconda recipe exists yet.
 
 **The container does not yet exist on Biocontainers/BioRxiv.** This forces me to set `skip_plastizyme = true` in all test runs, which defeats the purpose of the pipeline.
 

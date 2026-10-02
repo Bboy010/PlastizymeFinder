@@ -99,16 +99,6 @@ jobs:
         with:
           version: "0.9.4"
 
-      # Build the MeTarEnz image locally under the same tag the module pulls.
-      # Docker then resolves it without touching the registry, so the tests stay
-      # self-contained and keep working on forks and pull requests, where the
-      # GHCR package may be absent or private. It also checks the Dockerfile
-      # still builds - its base is Debian 10, served from archive.debian.org.
-      - name: Build the MeTarEnz runtime image
-        run: |
-          docker build -t "ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/plastizymefinder-metarenz:1.0" \
-              containers/metarenz
-
       # TMALIGN and RPSBLAST pull public Biocontainers images. Everything runs
       # against the test data shipped in the repository.
       - name: nf-test

@@ -183,14 +183,14 @@ Change the container of one process the same way:
 ```groovy
 process {
     withName: 'METARENZ' {
-        container = '<your-registry>/metarenz:1.0'
+        container = '<your-registry>/metarenz:1.1'
     }
 }
 ```
 
-MeTarEnz runs from `ghcr.io/bboy010/plastizymefinder-metarenz:1.0`, the
-authors' image `mforooz/metarenz` with `procps` added: Nextflow needs `ps`
-to collect task metrics and stops the task without it.
+MeTarEnz runs from `mforooz/metarenz:1.1`, the authors' own Docker image
+(MIT licence). Version 1.1 includes `procps`, which Nextflow needs to collect
+task metrics.
 
 ## Running in the background
 
